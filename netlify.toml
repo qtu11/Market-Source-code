@@ -4,6 +4,9 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # Use npm instead of pnpm to avoid lockfile issues
+  NPM_FLAGS = "--legacy-peer-deps"
+  # If using pnpm, allow non-frozen lockfile
   PNPM_FLAGS = "--no-frozen-lockfile"
   
 [[plugins]]
