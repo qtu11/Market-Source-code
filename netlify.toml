@@ -1,0 +1,26 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+  
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  
+[build.processing]
+  skip_processing = false
+
+# Health check endpoints
+[[redirects]]
+  from = "/health"
+  to = "/api/health"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/health/database"
+  to = "/api/health/database"
+  status = 200
+  force = false
+

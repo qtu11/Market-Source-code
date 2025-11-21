@@ -1,0 +1,16 @@
+{
+  "name": "qtusdev market",
+  "short_name": "qtusdev",
+  "description": "website chuyên về code",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8b5cf6",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ]
+}
