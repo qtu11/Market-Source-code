@@ -9,6 +9,19 @@ const shouldSkipDbTest =
 // Detect serverless environment
 const isServerless = process.env.NETLIFY === 'true' || process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
+// Thêm function để validate database connection
+function validateDatabaseConfig() {
+  if (!process.env.DATABASE_URL && !process.env.DB_PASSWORD) {
+    if (isServerless) {
+      // Trong serverless, log warning nhưng không throw để build không fail
+      logger.warn('Database configuration missing. API endpoints will fail at runtime.');
+      return false;
+    }
+    throw new Error('Database configuration is required. Please set DATABASE_URL or DB_* environment variables.');
+  }
+  return true;
+}
+
 // Serverless: giảm max connections, tăng timeout
 const poolConfig = isServerless
   ? {
@@ -25,6 +38,13 @@ const poolConfig = isServerless
 
 // PostgreSQL Connection Pool với fallback
 function createPool() {
+  // Validate config trước
+  const hasValidConfig = validateDatabaseConfig();
+  if (!hasValidConfig && isServerless) {
+    // Return a mock pool that will fail gracefully
+    return null as any; // TypeScript workaround
+  }
+
   // Ưu tiên DATABASE_URL nếu có
   if (process.env.DATABASE_URL) {
     try {

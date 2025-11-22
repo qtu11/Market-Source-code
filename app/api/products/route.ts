@@ -61,6 +61,18 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     logError('Products GET', error);
+    
+    // ✅ FIX: Check if it's a database connection error
+    if (error instanceof Error) {
+      if (error.message?.includes('ENOTFOUND') || error.message?.includes('getaddrinfo')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Database connection failed. Please check environment variables.',
+          details: process.env.NETLIFY ? 'Database configuration missing on Netlify' : error.message
+        }, { status: 503 }); // Service Unavailable
+      }
+    }
+    
     return NextResponse.json(
       createErrorResponse(error, 500),
       { status: 500 }

@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "@/app/globals.css"
 import { Providers } from "@/components/providers"
 import { ChatWidget } from "@/components/chat-widget"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -85,11 +86,13 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </head>
       <body className={inter.className}>
-        <Providers>
-          {children}
-          {/* ✅ Chat Widget - Hiển thị ở tất cả các trang */}
-          <ChatWidget />
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            {children}
+            {/* ✅ Chat Widget - Hiển thị ở tất cả các trang */}
+            <ChatWidget />
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   )

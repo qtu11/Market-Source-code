@@ -1,67 +1,44 @@
 "use client"
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { logger } from '@/lib/logger';
+import React from 'react';
+import { logger } from '@/lib/logger-client';
 
-interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
-}
-
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
-  error: Error | null;
+  error?: Error;
 }
 
-/**
- * ✅ FIX: Error Boundary component để catch React errors
- * Prevents entire app from crashing khi có lỗi trong component tree
- */
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  ErrorBoundaryState
+> {
+  constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error với logger service
-    logger.error('ErrorBoundary caught error', error, {
-      componentStack: errorInfo.componentStack,
-      errorBoundary: true,
-    });
-
-    // Call custom error handler nếu có
-    if (this.props.onError) {
-      this.props.onError(error, errorInfo);
-    }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    logger.error('React Error Boundary caught an error', error, { errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
-      // Custom fallback UI hoặc default
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      // Default error UI
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
-          <div className="text-center space-y-4">
-            <h2 className="text-2xl font-bold text-red-600">Đã xảy ra lỗi</h2>
-            <p className="text-muted-foreground">
-              {this.state.error?.message || 'Có lỗi không mong muốn xảy ra'}
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+              Đã xảy ra lỗi
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Vui lòng tải lại trang hoặc liên hệ hỗ trợ nếu vấn đề vẫn tiếp tục.
             </p>
             <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
             >
               Tải lại trang
             </button>
