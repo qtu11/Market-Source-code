@@ -3,7 +3,7 @@
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
   # Force npm instead of pnpm
   NPM_FLAGS = "--legacy-peer-deps"
   # Disable pnpm auto-detection completely
