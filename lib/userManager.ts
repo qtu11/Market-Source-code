@@ -33,8 +33,8 @@ class UserManager {
       // Fallback: localStorage
       if (typeof window !== 'undefined') {
         try {
-          const stored = localStorage.getItem(`user_${uid}`);
-          if (stored) {
+        const stored = localStorage.getItem(`user_${uid}`);
+        if (stored) {
             return JSON.parse(stored) as UserData;
           }
         } catch (parseError) {
@@ -146,12 +146,12 @@ class UserManager {
       if (userStr) {
         try {
           const user = JSON.parse(userStr) as UserData;
-          if (user.uid) {
-            // Try to get from Firestore
-            const firestoreData = await this.getUserData(user.uid);
-            return firestoreData || user;
-          }
-          return user;
+        if (user.uid) {
+          // Try to get from Firestore
+          const firestoreData = await this.getUserData(user.uid);
+          return firestoreData || user;
+        }
+        return user;
         } catch (parseError) {
           // Invalid JSON, return null
           return null;
@@ -257,8 +257,8 @@ class UserManager {
               const stored = localStorage.getItem(key);
               if (stored) {
                 const user = JSON.parse(stored) as UserData;
-                if (user.uid) {
-                  users.push(user);
+              if (user.uid) {
+                users.push(user);
                 }
               }
             } catch (e) {

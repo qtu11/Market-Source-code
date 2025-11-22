@@ -32,8 +32,8 @@ export function ProductsSection() {
   useEffect(() => {
     const loadFromLocalStorage = () => {
       try {
-        const uploadedProducts = JSON.parse(localStorage.getItem("uploadedProducts") || "[]")
-        return uploadedProducts.map((product: any) => ({
+      const uploadedProducts = JSON.parse(localStorage.getItem("uploadedProducts") || "[]")
+      return uploadedProducts.map((product: any) => ({
         ...product,
         tags: Array.isArray(product.tags) ? product.tags : [],
         rating: product.rating || 0,
@@ -107,8 +107,8 @@ export function ProductsSection() {
     } else {
       // Fallback if addToCart is not available
       try {
-        const cartItems = JSON.parse(localStorage.getItem("cartItems") || "[]")
-        const existingItem = cartItems.find((item: any) => item.id === product.id)
+      const cartItems = JSON.parse(localStorage.getItem("cartItems") || "[]")
+      const existingItem = cartItems.find((item: any) => item.id === product.id)
 
       if (existingItem) {
         existingItem.quantity += 1
@@ -116,9 +116,9 @@ export function ProductsSection() {
         cartItems.push({ ...product, quantity: 1 })
       }
 
-        localStorage.setItem("cartItems", JSON.stringify(cartItems))
-        window.dispatchEvent(new Event("cartUpdated"))
-        alert(`Đã thêm "${product.title}" vào giỏ hàng!`)
+      localStorage.setItem("cartItems", JSON.stringify(cartItems))
+      window.dispatchEvent(new Event("cartUpdated"))
+      alert(`Đã thêm "${product.title}" vào giỏ hàng!`)
       } catch (error) {
         console.error('Error adding to cart:', error);
         alert('Lỗi khi thêm sản phẩm vào giỏ hàng. Vui lòng thử lại!');

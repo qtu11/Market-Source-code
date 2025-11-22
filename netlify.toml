@@ -1,13 +1,24 @@
 [build]
-  command = "npm run build"
+  command = "rm -f pnpm-lock.yaml && npm ci --legacy-peer-deps && npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
-  # Use npm instead of pnpm to avoid lockfile issues
+  # Force npm instead of pnpm
   NPM_FLAGS = "--legacy-peer-deps"
-  # If using pnpm, allow non-frozen lockfile
-  PNPM_FLAGS = "--no-frozen-lockfile"
+  # Disable pnpm auto-detection completely
+  NETLIFY_USE_PNPM = "false"
+  # Disable corepack to prevent pnpm auto-detection
+  COREPACK_ENABLE_STRICT = "0"
+  COREPACK_ENABLE = "0"
+  # Explicitly set package manager
+  PACKAGE_MANAGER = "npm"
+  # Disable pnpm completely
+  PNPM_FLAGS = ""
+  # Use npm ci for faster, reliable builds
+  NPM_CONFIG_PRODUCTION = "false"
+  # Ignore pnpm-lock.yaml if exists
+  PNPM_IGNORE_LOCKFILE = "true"
   
 [[plugins]]
   package = "@netlify/plugin-nextjs"
