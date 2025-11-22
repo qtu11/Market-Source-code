@@ -1,8 +1,5 @@
 "use client"
 
-// Disable static generation for admin page
-export const dynamic = 'force-dynamic'
-
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
