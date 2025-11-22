@@ -31,6 +31,8 @@ export class ErrorBoundary extends React.Component<
       const isDatabaseError = errorMessage.includes('Database') || 
                               errorMessage.includes('ENOTFOUND') ||
                               errorMessage.includes('connection failed');
+      const isReactError = errorMessage.includes('ReactCurrentBatchConfig') ||
+                           errorMessage.includes('Cannot read properties of undefined');
       
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -45,6 +47,18 @@ export class ErrorBoundary extends React.Component<
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Vui lòng kiểm tra environment variables trên Netlify (DATABASE_URL hoặc DB_* variables).
+                </p>
+              </div>
+            ) : isReactError ? (
+              <div className="mb-4">
+                <p className="text-red-600 dark:text-red-400 mb-2 font-semibold">
+                  ⚠️ Lỗi React
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Đã xảy ra lỗi với React. Vui lòng tải lại trang hoặc xóa cache trình duyệt.
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">
+                  Nếu vấn đề vẫn tiếp tục, có thể do build chưa được deploy đúng cách.
                 </p>
               </div>
             ) : (
