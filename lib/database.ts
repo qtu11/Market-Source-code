@@ -125,29 +125,50 @@ let poolInstance: Pool | null = null;
 function getPoolInstance(): Pool | null {
   if (!poolInstance) {
     try {
-    poolInstance = createPool();
+      poolInstance = createPool();
       // Error handler - chỉ thêm nếu poolInstance không null
       if (poolInstance) {
-    poolInstance.on('error', (err) => {
-      logger.error('Unexpected error on idle PostgreSQL client', err, {
-        hasDatabaseUrl: !!process.env.DATABASE_URL,
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || '5433',
-        database: process.env.DB_NAME || 'qtusdevmarket',
-        isServerless: process.env.NETLIFY === 'true' || process.env.VERCEL === '1',
-      });
-      
-      // Reset pool instance on error để tạo lại connection
-      // (quan trọng cho serverless environment)
-      if (process.env.NETLIFY === 'true' || process.env.VERCEL === '1') {
-        poolInstance = null;
-      }
-    });
+        poolInstance.on('error', (err) => {
+          logger.error('Unexpected error on idle PostgreSQL client', err, {
+            hasDatabaseUrl: !!process.env.DATABASE_URL,
+            host: process.env.DB_HOST || 'localhost',
+            port: process.env.DB_PORT || '5433',
+            database: process.env.DB_NAME || 'qtusdevmarket',
+            isServerless: process.env.NETLIFY === 'true' || process.env.VERCEL === '1',
+            errorCode: (err as any)?.code,
+            errorMessage: err.message,
+          });
+          
+          // Reset pool instance on error để tạo lại connection
+          // (quan trọng cho serverless environment)
+          if (process.env.NETLIFY === 'true' || process.env.VERCEL === '1') {
+            poolInstance = null;
+          }
+        });
+        
+        // ✅ FIX: Test connection ngay sau khi tạo pool (chỉ trong serverless)
+        if (isServerless) {
+          poolInstance.query('SELECT 1')
+            .then(() => {
+              logger.info('Database pool connection test successful (serverless)');
+            })
+            .catch((err) => {
+              logger.warn('Database pool connection test failed (serverless)', {
+                error: err.message,
+                code: (err as any)?.code,
+              });
+              // Reset pool nếu test fail
+              poolInstance = null;
+            });
+        }
       }
     } catch (error: unknown) {
       // ✅ FIX: Trong serverless, không throw error mà return null để handle gracefully
       if (isServerless) {
-        logger.warn('Database pool creation failed in serverless environment', error as Error);
+        logger.warn('Database pool creation failed in serverless environment', {
+          error: error instanceof Error ? error.message : String(error),
+          code: (error as any)?.code,
+        });
         return null;
       }
       // Nếu không phải serverless, throw error như bình thường

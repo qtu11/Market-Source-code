@@ -30,9 +30,11 @@ export class ErrorBoundary extends React.Component<
       const errorMessage = this.state.error?.message || 'Unknown error';
       const isDatabaseError = errorMessage.includes('Database') || 
                               errorMessage.includes('ENOTFOUND') ||
-                              errorMessage.includes('connection failed');
+                              errorMessage.includes('connection failed') ||
+                              errorMessage.includes('Pool instance is null');
+      
       const isReactError = errorMessage.includes('ReactCurrentBatchConfig') ||
-                           errorMessage.includes('Cannot read properties of undefined');
+                          errorMessage.includes('Cannot read properties of undefined');
       
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -51,14 +53,11 @@ export class ErrorBoundary extends React.Component<
               </div>
             ) : isReactError ? (
               <div className="mb-4">
-                <p className="text-red-600 dark:text-red-400 mb-2 font-semibold">
+                <p className="text-yellow-600 dark:text-yellow-400 mb-2 font-semibold">
                   ⚠️ Lỗi React
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Đã xảy ra lỗi với React. Vui lòng tải lại trang hoặc xóa cache trình duyệt.
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">
-                  Nếu vấn đề vẫn tiếp tục, có thể do build chưa được deploy đúng cách.
+                  Đã xảy ra lỗi với React. Vui lòng tải lại trang để khắc phục.
                 </p>
               </div>
             ) : (
@@ -67,25 +66,29 @@ export class ErrorBoundary extends React.Component<
               </p>
             )}
             <div className="flex gap-2 justify-center">
-            <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-            >
-              Tải lại trang
-            </button>
+              <button
+                onClick={() => {
+                  // Clear error state and reload
+                  this.setState({ hasError: false, error: undefined });
+                  window.location.reload();
+                }}
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+              >
+                Tải lại trang
+              </button>
               <button
                 onClick={() => this.setState({ hasError: false, error: undefined })}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 Thử lại
               </button>
             </div>
-            {process.env.NODE_ENV === 'development' && (
+            {(process.env.NODE_ENV === 'development' || isReactError) && (
               <details className="mt-4 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400">
-                  Chi tiết lỗi (dev only)
+                  Chi tiết lỗi {isReactError ? '(React Error)' : '(dev only)'}
                 </summary>
-                <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-auto">
+                <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-auto max-h-40">
                   {errorMessage}
                 </pre>
               </details>
