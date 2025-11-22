@@ -478,7 +478,7 @@ function AdminPageContent() {
     router.push("/admin/login")
   }, [router])
 
-  // Product management functions
+  // Product management functions - ✅ FIX: Dùng API thay vì localStorage
   const addProduct = useCallback(async () => {
     try {
       if (!newProduct.title || !newProduct.price) {
@@ -486,36 +486,45 @@ function AdminPageContent() {
         return
       }
 
-      const product = {
-        id: Date.now().toString(),
+      // ✅ FIX: Gọi API để tạo product
+      const { apiPost } = await import('@/lib/api-client');
+      const { mapFrontendToBackend, mapBackendToFrontend } = await import('@/lib/product-mapper');
+      
+      const productData = mapFrontendToBackend({
         ...newProduct,
-        price: parseInt(newProduct.price),
-        tags: newProduct.tags.split(",").map(tag => tag.trim()).filter(Boolean),
-        createdAt: new Date().toISOString(),
-        createdBy: adminUser.email
+        price: parseFloat(newProduct.price),
+        tags: newProduct.tags ? newProduct.tags.split(",").map(tag => tag.trim()).filter(Boolean) : [],
+        imageUrl: newProduct.image,
+        downloadUrl: newProduct.downloadLink,
+        demoUrl: newProduct.demoLink,
+      });
+
+      const result = await apiPost('/api/products', productData);
+
+      if (result.success && result.product) {
+        const mappedProduct = mapBackendToFrontend(result.product);
+        const updatedProducts = [...products, mappedProduct];
+        setProducts(updatedProducts);
+
+        setNewProduct({
+          title: "",
+          description: "",
+          price: "",
+          category: "",
+          image: "",
+          downloadLink: "",
+          demoLink: "",
+          tags: ""
+        })
+
+        alert("Thêm sản phẩm thành công!")
+      } else {
+        throw new Error(result.error || 'Failed to create product');
       }
-
-      const updatedProducts = [...products, product]
-      setProducts(updatedProducts)
-      localStorage.setItem("uploadedProducts", JSON.stringify(updatedProducts))
-
-      setNewProduct({
-        title: "",
-        description: "",
-        price: "",
-        category: "",
-        image: "",
-        downloadLink: "",
-        demoLink: "",
-        tags: ""
-      })
-
-      alert("Thêm sản phẩm thành công!")
     } catch (error) {
-      // ✅ FIX: Migrate console → logger
       const { logger } = await import('@/lib/logger');
       logger.error("Error adding product", error)
-      alert("Có lỗi xảy ra khi thêm sản phẩm!")
+      alert("Có lỗi xảy ra khi thêm sản phẩm: " + (error instanceof Error ? error.message : "Vui lòng thử lại"))
     }
   }, [newProduct, products, adminUser])
 
@@ -526,25 +535,41 @@ function AdminPageContent() {
         return
       }
 
-      const updatedProducts = products.map(p =>
-        p.id === product.id ? {
-          ...product,
-          price: parseInt(product.price),
-          tags: product.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean),
-          updatedAt: new Date().toISOString(),
-          updatedBy: adminUser.email
-        } : p
-      )
+      // ✅ FIX: Gọi API để update product
+      const { apiPut } = await import('@/lib/api-client');
+      const { mapFrontendToBackend, mapBackendToFrontend } = await import('@/lib/product-mapper');
+      
+      const productId = typeof product.id === 'string' ? parseInt(product.id) : product.id;
+      if (isNaN(productId)) {
+        throw new Error('Invalid product ID');
+      }
 
-      setProducts(updatedProducts)
-      localStorage.setItem("uploadedProducts", JSON.stringify(updatedProducts))
-      setEditingProduct(null)
-      alert("Cập nhật sản phẩm thành công!")
+      const productData = mapFrontendToBackend({
+        ...product,
+        price: parseFloat(product.price),
+        tags: Array.isArray(product.tags) ? product.tags : (product.tags ? product.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean) : []),
+        imageUrl: product.imageUrl || product.image,
+        downloadUrl: product.downloadUrl || product.downloadLink,
+        demoUrl: product.demoUrl || product.demoLink,
+      });
+
+      const result = await apiPut(`/api/products/${productId}`, productData);
+
+      if (result.success && result.product) {
+        const mappedProduct = mapBackendToFrontend(result.product);
+        const updatedProducts = products.map(p =>
+          p.id === product.id ? mappedProduct : p
+        );
+        setProducts(updatedProducts);
+        setEditingProduct(null);
+        alert("Cập nhật sản phẩm thành công!")
+      } else {
+        throw new Error(result.error || 'Failed to update product');
+      }
     } catch (error) {
-      // ✅ FIX: Migrate console → logger
       const { logger } = await import('@/lib/logger');
       logger.error("Error editing product", error)
-      alert("Có lỗi xảy ra khi cập nhật sản phẩm!")
+      alert("Có lỗi xảy ra khi cập nhật sản phẩm: " + (error instanceof Error ? error.message : "Vui lòng thử lại"))
     }
   }, [products, adminUser])
 
@@ -552,15 +577,30 @@ function AdminPageContent() {
     if (!confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) return
 
     try {
-      const updatedProducts = products.filter(p => p.id !== productId)
-      setProducts(updatedProducts)
-      localStorage.setItem("uploadedProducts", JSON.stringify(updatedProducts))
-      alert("Xóa sản phẩm thành công!")
+      // ✅ FIX: Gọi API để xóa product
+      const { apiDelete } = await import('@/lib/api-client');
+      
+      const id = typeof productId === 'string' ? parseInt(productId) : productId;
+      if (isNaN(id)) {
+        throw new Error('Invalid product ID');
+      }
+
+      const result = await apiDelete(`/api/products/${id}`);
+
+      if (result.success) {
+        const updatedProducts = products.filter(p => {
+          const pId = typeof p.id === 'string' ? parseInt(p.id) : p.id;
+          return pId !== id;
+        });
+        setProducts(updatedProducts);
+        alert("Xóa sản phẩm thành công!")
+      } else {
+        throw new Error(result.error || 'Failed to delete product');
+      }
     } catch (error) {
-      // ✅ FIX: Migrate console → logger
       const { logger } = await import('@/lib/logger');
       logger.error("Error deleting product", error)
-      alert("Có lỗi xảy ra khi xóa sản phẩm!")
+      alert("Có lỗi xảy ra khi xóa sản phẩm: " + (error instanceof Error ? error.message : "Vui lòng thử lại"))
     }
   }, [products])
 
