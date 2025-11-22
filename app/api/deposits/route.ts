@@ -212,14 +212,6 @@ export async function PUT(request: NextRequest): Promise<Response> {
       message: 'Deposit status updated'
     });
   } catch (error: any) {
-    let logger;
-    try {
-      const loggerModule = await import('@/lib/logger');
-      logger = loggerModule.logger;
-    } catch {
-      // Fallback: logger đã được import ở trên, không cần fallback
-      logger = loggerModule.logger;
-    }
     logger.error('Deposit PUT error', error, { endpoint: '/api/deposits' });
     
     if (error.message?.includes('Unauthorized')) {
