@@ -878,7 +878,7 @@ export default function DashboardPage() {
           const qtusdevUserData = getLocalStorage<User | null>("qtusdev_user", null);
           const userStr = currentUserData ? JSON.stringify(currentUserData) : (qtusdevUserData ? JSON.stringify(qtusdevUserData) : null)
           if (!userStr) {
-            console.log('❌ User not found, redirecting to login')
+            logger.warn('User not found, redirecting to login')
             router.push("/auth/login")
             return
           }
@@ -1049,7 +1049,7 @@ export default function DashboardPage() {
               logger.debug('User deposits loaded from API', { count: mappedDeposits.length });
             } catch (depositError: any) {
               if (depositError.message?.includes('Unauthorized')) {
-                console.warn('User not authenticated, skipping deposits load');
+                logger.warn('User not authenticated, skipping deposits load');
               } else {
                 logger.error('Error loading deposits from API', depositError);
               }
@@ -1105,7 +1105,7 @@ export default function DashboardPage() {
               logger.debug('User withdrawals loaded from API', { count: mappedWithdrawals.length });
             } catch (withdrawalError: any) {
               if (withdrawalError.message?.includes('Unauthorized')) {
-                console.warn('User not authenticated, skipping withdrawals load');
+                logger.warn('User not authenticated, skipping withdrawals load');
               } else {
                 logger.error('Error loading withdrawals from API', withdrawalError);
               }
@@ -1310,7 +1310,7 @@ export default function DashboardPage() {
             }
           } catch (error: any) {
             if (error.name !== 'AbortError') {
-              console.error('Error refreshing deposits:', error);
+              logger.error('Error refreshing deposits', error);
             }
           }
         }
@@ -1345,7 +1345,7 @@ export default function DashboardPage() {
             }
           } catch (error: any) {
             if (error.name !== 'AbortError') {
-              console.error('Error refreshing withdrawals:', error);
+              logger.error('Error refreshing withdrawals', error);
             }
           }
         }
