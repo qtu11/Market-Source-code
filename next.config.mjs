@@ -17,17 +17,9 @@ const nextConfig = {
         crypto: false,
       };
       
-      // ✅ FIX: Đảm bảo chỉ có 1 instance của React để tránh lỗi ReactCurrentBatchConfig
-      try {
-        config.resolve.alias = {
-          ...config.resolve.alias,
-          'react': require.resolve('react'),
-          'react-dom': require.resolve('react-dom'),
-        };
-      } catch (error) {
-        // Fallback nếu không resolve được (trong một số môi trường)
-        console.warn('Could not resolve React aliases:', error.message);
-      }
+      // ✅ FIX: Next.js đã tự xử lý React và jsx-runtime
+      // Không cần alias React vì có thể gây xung đột với jsx-runtime
+      // Chỉ giữ lại fallback cho server-side modules
     }
     
     // Cho phép optional dependencies như firebase-admin được resolve ở runtime
