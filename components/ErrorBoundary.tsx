@@ -53,12 +53,12 @@ export class ErrorBoundary extends React.Component<
               </p>
             )}
             <div className="flex gap-2 justify-center">
-              <button
+            <button
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-              >
-                Tải lại trang
-              </button>
+            >
+              Tải lại trang
+            </button>
               <button
                 onClick={() => this.setState({ hasError: false, error: undefined })}
                 className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"

@@ -506,18 +506,18 @@ function AdminPageContent() {
         const updatedProducts = [...products, mappedProduct];
         setProducts(updatedProducts);
 
-        setNewProduct({
-          title: "",
-          description: "",
-          price: "",
-          category: "",
-          image: "",
-          downloadLink: "",
-          demoLink: "",
-          tags: ""
-        })
+      setNewProduct({
+        title: "",
+        description: "",
+        price: "",
+        category: "",
+        image: "",
+        downloadLink: "",
+        demoLink: "",
+        tags: ""
+      })
 
-        alert("Thêm sản phẩm thành công!")
+      alert("Thêm sản phẩm thành công!")
       } else {
         throw new Error(result.error || 'Failed to create product');
       }
@@ -545,7 +545,7 @@ function AdminPageContent() {
       }
 
       const productData = mapFrontendToBackend({
-        ...product,
+          ...product,
         price: parseFloat(product.price),
         tags: Array.isArray(product.tags) ? product.tags : (product.tags ? product.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean) : []),
         imageUrl: product.imageUrl || product.image,
@@ -562,7 +562,7 @@ function AdminPageContent() {
         );
         setProducts(updatedProducts);
         setEditingProduct(null);
-        alert("Cập nhật sản phẩm thành công!")
+      alert("Cập nhật sản phẩm thành công!")
       } else {
         throw new Error(result.error || 'Failed to update product');
       }
@@ -593,7 +593,7 @@ function AdminPageContent() {
           return pId !== id;
         });
         setProducts(updatedProducts);
-        alert("Xóa sản phẩm thành công!")
+      alert("Xóa sản phẩm thành công!")
       } else {
         throw new Error(result.error || 'Failed to delete product');
       }

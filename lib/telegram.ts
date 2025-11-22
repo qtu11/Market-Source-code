@@ -1,3 +1,5 @@
+import { logger } from './logger'
+
 export const sendTelegramNotification = async (message: string) => {
   try {
     if (!process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || !process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID) {
@@ -19,7 +21,7 @@ export const sendTelegramNotification = async (message: string) => {
 
     return response.ok
   } catch (error) {
-    console.error('Telegram notification error:', error)
+    logger.error('Telegram notification error:', error)
     return false
   }
 }

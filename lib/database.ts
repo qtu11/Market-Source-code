@@ -125,24 +125,24 @@ let poolInstance: Pool | null = null;
 function getPoolInstance(): Pool | null {
   if (!poolInstance) {
     try {
-      poolInstance = createPool();
+    poolInstance = createPool();
       // Error handler - chỉ thêm nếu poolInstance không null
       if (poolInstance) {
-        poolInstance.on('error', (err) => {
-          logger.error('Unexpected error on idle PostgreSQL client', err, {
-            hasDatabaseUrl: !!process.env.DATABASE_URL,
-            host: process.env.DB_HOST || 'localhost',
-            port: process.env.DB_PORT || '5433',
-            database: process.env.DB_NAME || 'qtusdevmarket',
-            isServerless: process.env.NETLIFY === 'true' || process.env.VERCEL === '1',
-          });
-          
-          // Reset pool instance on error để tạo lại connection
-          // (quan trọng cho serverless environment)
-          if (process.env.NETLIFY === 'true' || process.env.VERCEL === '1') {
-            poolInstance = null;
-          }
-        });
+    poolInstance.on('error', (err) => {
+      logger.error('Unexpected error on idle PostgreSQL client', err, {
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || '5433',
+        database: process.env.DB_NAME || 'qtusdevmarket',
+        isServerless: process.env.NETLIFY === 'true' || process.env.VERCEL === '1',
+      });
+      
+      // Reset pool instance on error để tạo lại connection
+      // (quan trọng cho serverless environment)
+      if (process.env.NETLIFY === 'true' || process.env.VERCEL === '1') {
+        poolInstance = null;
+      }
+    });
       }
     } catch (error: unknown) {
       // ✅ FIX: Trong serverless, không throw error mà return null để handle gracefully

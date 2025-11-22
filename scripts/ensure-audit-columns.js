@@ -120,8 +120,8 @@ async function ensureAuditColumns() {
     console.log('\n✅ Audit columns ensured for all public tables.\n');
     process.exit(0);
   } catch (error) {
-    console.error('\n❌ Failed to ensure audit columns');
-    console.error(error);
+    const { logger } = require('../lib/logger');
+    logger.error('\n❌ Failed to ensure audit columns', error);
     process.exit(1);
   } finally {
     await pool.end();

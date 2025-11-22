@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Menu, ShoppingCart, User, Wallet, LogOut, Settings } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { logger } from "@/lib/logger-client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +36,7 @@ export function Header() {
         const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]')
         setCartCount(cartItems.reduce((total: number, item: any) => total + (item.quantity || 1), 0))
       } catch (error) {
-        console.error('Error loading cart:', error)
+        logger.error('Error loading cart:', error)
         setCartCount(0)
       }
     }
@@ -54,7 +55,7 @@ export function Header() {
           setBalance(0)
         }
       } catch (error) {
-        console.error('Error loading user data:', error)
+        logger.error('Error loading user data:', error)
         setUser(null)
         setBalance(0)
       }
@@ -101,7 +102,7 @@ export function Header() {
       window.dispatchEvent(new Event('userUpdated'))
       window.location.href = '/'
     } catch (error) {
-      console.error('Error during logout:', error)
+      logger.error('Error during logout:', error)
     }
   }
 

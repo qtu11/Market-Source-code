@@ -4,6 +4,7 @@
  */
 
 import { pool } from './database';
+import { logger } from './logger';
 
 /**
  * Get product rating từ bảng product_ratings
@@ -32,7 +33,7 @@ export async function getProductRating(productId: number) {
       updated_at: result.rows[0].updated_at,
     };
   } catch (error) {
-    console.error('Error getting product rating:', error);
+    logger.error('Error getting product rating:', error);
     throw error;
   }
 }
@@ -78,7 +79,7 @@ export async function getProductRatings(productIds: number[]) {
     
     return Array.from(ratingsMap.values());
   } catch (error) {
-    console.error('Error getting product ratings:', error);
+    logger.error('Error getting product ratings:', error);
     throw error;
   }
 }
@@ -115,7 +116,7 @@ export async function getTopRatedProducts(limit: number = 10) {
       updated_at: row.updated_at,
     }));
   } catch (error) {
-    console.error('Error getting top rated products:', error);
+    logger.error('Error getting top rated products:', error);
     throw error;
   }
 }
@@ -145,7 +146,7 @@ export async function recalculateProductRating(productId: number) {
     
     return await getProductRating(productId);
   } catch (error) {
-    console.error('Error recalculating product rating:', error);
+    logger.error('Error recalculating product rating:', error);
     throw error;
   }
 }
@@ -185,7 +186,7 @@ export async function getRatingStatistics() {
       lowest_rating: parseFloat(row.lowest_rating || '0'),
     };
   } catch (error) {
-    console.error('Error getting rating statistics:', error);
+    logger.error('Error getting rating statistics:', error);
     throw error;
   }
 }

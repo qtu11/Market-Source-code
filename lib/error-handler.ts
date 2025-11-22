@@ -3,6 +3,8 @@
  * ✅ SECURITY FIX: Sanitize error messages trong production
  */
 
+import { logger } from './logger';
+
 /**
  * Sanitize error message để không leak sensitive information
  */
@@ -67,11 +69,11 @@ export function logError(context: string, error: unknown) {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
   if (isDevelopment) {
-    console.error(`[${context}]`, error);
+    logger.error(`[${context}]`, error);
   } else {
     // Production: Log sanitized error
     const sanitized = sanitizeError(error, false);
-    console.error(`[${context}]`, sanitized);
+    logger.error(`[${context}]`, sanitized);
     
     // Log to external service (Sentry, LogRocket, etc.) if needed
     // Example: Sentry.captureException(error);

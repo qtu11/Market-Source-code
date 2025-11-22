@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { apiGet, apiPost, apiDelete } from "@/lib/api-client"
 import { trackAddToWishlist } from "@/lib/analytics"
 import { toast } from "sonner"
+import { logger } from "@/lib/logger-client"
 
 interface WishlistButtonProps {
   productId: number
@@ -23,7 +24,7 @@ export function WishlistButton({ productId, className, size = "md" }: WishlistBu
       const result = await apiGet(`/api/wishlist?productId=${productId}`)
       setIsInWishlist(result.inWishlist || false)
     } catch (error) {
-      console.error('Error checking wishlist:', error)
+      logger.error('Error checking wishlist:', error)
     } finally {
       setIsChecking(false)
     }
@@ -49,7 +50,7 @@ export function WishlistButton({ productId, className, size = "md" }: WishlistBu
         toast.success("Đã thêm vào wishlist")
       }
     } catch (error: any) {
-      console.error('Error toggling wishlist:', error)
+      logger.error('Error toggling wishlist:', error)
       toast.error(error.message || "Có lỗi xảy ra")
     } finally {
       setIsLoading(false)

@@ -10,6 +10,7 @@ import Image from "next/image"
 import { Product } from "@/types/product"
 import { apiGet } from "@/lib/api-client"
 import { mapBackendProductsToFrontend } from "@/lib/product-mapper"
+import { logger } from "@/lib/logger-client"
 
 export function ProductsSection() {
   const [activeCategory, setActiveCategory] = useState("all")
@@ -42,7 +43,7 @@ export function ProductsSection() {
         originalPrice: product.originalPrice || product.price || 0,
       }))
       } catch (error) {
-        console.error('Error parsing localStorage products:', error);
+        logger.error('Error parsing localStorage products:', error);
         return [];
       }
     }
@@ -120,7 +121,7 @@ export function ProductsSection() {
       window.dispatchEvent(new Event("cartUpdated"))
       alert(`Đã thêm "${product.title}" vào giỏ hàng!`)
       } catch (error) {
-        console.error('Error adding to cart:', error);
+        logger.error('Error adding to cart:', error);
         alert('Lỗi khi thêm sản phẩm vào giỏ hàng. Vui lòng thử lại!');
       }
     }

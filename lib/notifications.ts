@@ -1,3 +1,5 @@
+import { logger } from './logger'
+
 export const sendDepositNotification = async (depositInfo: any) => {
   try {
     if (!process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN || !process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID) {
@@ -30,7 +32,7 @@ export const sendDepositNotification = async (depositInfo: any) => {
 
     return response.ok
   } catch (error) {
-    console.error('Deposit notification error:', error)
+    logger.error('Deposit notification error:', error)
     return false
   }
 }
@@ -67,7 +69,7 @@ export const sendWithdrawalNotification = async (withdrawalInfo: any) => {
 
     return response.ok
   } catch (error) {
-    console.error('Withdrawal notification error:', error)
+    logger.error('Withdrawal notification error:', error)
     return false
   }
 }

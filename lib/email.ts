@@ -3,6 +3,8 @@
  * Fallback to console.log in development
  */
 
+import { logger } from './logger';
+
 let resend: any = null;
 
 async function getResend() {
@@ -52,7 +54,7 @@ export async function sendEmail(options: EmailOptions) {
 
     return { success: true, id: result.id };
   } catch (error: any) {
-    console.error('Error sending email:', error);
+    logger.error('Error sending email:', error);
     throw error;
   }
 }

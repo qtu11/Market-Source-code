@@ -8,6 +8,7 @@ import { getAuth } from 'firebase/auth';
 import { initializeApp, getApps } from 'firebase/app';
 import { fetchWithTimeout } from './fetch-with-timeout';
 import { getLocalStorage } from './localStorage-utils';
+import { logger } from './logger-client';
 
 let firebaseApp: any = null;
 
@@ -36,7 +37,7 @@ async function getFirebaseApp() {
     
     return firebaseApp;
   } catch (error) {
-    console.error('Error initializing Firebase:', error);
+    logger.error('Error initializing Firebase:', error);
     return null;
   }
 }
@@ -99,7 +100,7 @@ export async function getAuthToken(): Promise<string | null> {
     const token = await user.getIdToken(true); // Force refresh
     return token;
   } catch (error) {
-    console.error('Error getting auth token:', error);
+    logger.error('Error getting auth token:', error);
     return null;
   }
 }
@@ -290,7 +291,7 @@ export async function apiRequest(
     
     return await response.json();
   } catch (error: any) {
-    console.error('API request error:', error);
+    logger.error('API request error:', error);
     throw error;
   }
 }

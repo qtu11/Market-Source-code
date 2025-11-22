@@ -5,6 +5,7 @@
 
 import { userManager } from '@/lib/userManager';
 import { apiGet, apiPost, apiPut } from '@/lib/api-client';
+import { logger } from './logger';
 
 // Mock data cho backward compatibility
 const mockDeposits: any[] = [];
@@ -136,7 +137,7 @@ export async function saveNotification(notificationData: any): Promise<any> {
 
     return { success: true, id: result.id || result.notificationId };
   } catch (error) {
-    console.error('Error saving notification:', error);
+    logger.error('Error saving notification:', error);
     return { success: false, error };
   }
 }
@@ -201,7 +202,7 @@ export async function loadDepositsAndWithdrawals(): Promise<{ deposits: any[], w
 
     return { deposits: mockDeposits, withdrawals: mockWithdrawals };
   } catch (error) {
-    console.error('Error loading deposits and withdrawals:', error);
+    logger.error('Error loading deposits and withdrawals:', error);
     return { deposits: [], withdrawals: [] };
   }
 }

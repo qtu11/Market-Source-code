@@ -1,6 +1,7 @@
 "use client"
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { logger } from "@/lib/logger-client"
 
 interface Props {
   children: ReactNode
@@ -23,7 +24,9 @@ export class ThreeJSErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Three.js Error:', error, errorInfo)
+    logger.error('Three.js Error:', error, {
+      componentStack: errorInfo.componentStack,
+    })
   }
 
   render() {

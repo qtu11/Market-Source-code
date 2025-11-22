@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Box, Torus, Octahedron, Text3D, Center } from '@react-three/drei'
 import * as THREE from 'three'
+import { logger } from "@/lib/logger-client"
 
 // Floating code symbols particles
 function FloatingCodeParticles({ count = 80 }) {
@@ -291,7 +292,9 @@ class ThreeJSErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Three.js Error:', error, errorInfo)
+    logger.error('Three.js Error:', error, {
+      componentStack: errorInfo.componentStack,
+    })
   }
 
   render() {

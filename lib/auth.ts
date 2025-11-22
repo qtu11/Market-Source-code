@@ -4,6 +4,7 @@
 // ============================================================
 
 import { userManager } from './userManager';
+import { logger } from './logger';
 
 // ============================================================
 // Device & IP Info
@@ -136,7 +137,7 @@ export async function requestPasswordReset(
       message: data.message || data.error,
     };
   } catch (error: any) {
-    console.error('Request password reset error:', error);
+    logger.error('Request password reset error:', error);
     return {
       success: false,
       message: error.message || 'Có lỗi xảy ra khi gửi yêu cầu đặt lại mật khẩu',
@@ -223,7 +224,7 @@ export async function changePassword(
       message: updateData.message || updateData.error,
     };
   } catch (error: any) {
-    console.error('Change password error:', error);
+    logger.error('Change password error:', error);
     return {
       success: false,
       message: error.message || 'Có lỗi xảy ra khi đổi mật khẩu',

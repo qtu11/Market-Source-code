@@ -87,11 +87,11 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ErrorBoundary>
-          <Providers>
-            {children}
-            {/* ✅ Chat Widget - Hiển thị ở tất cả các trang */}
-            <ChatWidget />
-          </Providers>
+        <Providers>
+          {children}
+          {/* ✅ Chat Widget - Hiển thị ở tất cả các trang */}
+          <ChatWidget />
+        </Providers>
         </ErrorBoundary>
       </body>
     </html>

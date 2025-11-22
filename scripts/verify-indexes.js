@@ -135,7 +135,8 @@ async function verifyIndexes() {
 
     return { allGood, missing, found };
   } catch (error) {
-    console.error('❌ Error verifying indexes:', error);
+    const { logger } = require('../lib/logger');
+    logger.error('❌ Error verifying indexes:', error);
     throw error;
   } finally {
     await pool.end();
@@ -149,7 +150,8 @@ if (require.main === module) {
       process.exit(allGood ? 0 : 1);
     })
     .catch((error) => {
-      console.error('Fatal error:', error);
+      const { logger } = require('../lib/logger');
+      logger.error('Fatal error:', error);
       process.exit(1);
     });
 }

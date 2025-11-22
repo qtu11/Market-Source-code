@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MessageCircle, Send, Search, User, Clock } from "lucide-react"
 import { apiGet, apiPost } from "@/lib/api-client"
+import { logger } from "@/lib/logger-client"
 
 interface Message {
   id: number
@@ -130,7 +131,7 @@ export function ChatAdmin() {
       if (error.message?.includes('Unauthorized')) {
         console.warn('Chat: Admin not authenticated')
       } else {
-        console.error('Error loading chat users:', error)
+        logger.error('Error loading chat users:', error)
       }
     }
   }
@@ -170,7 +171,7 @@ export function ChatAdmin() {
       if (error.message?.includes('Unauthorized')) {
         console.warn('Chat: Admin not authenticated')
       } else {
-        console.error('Error loading chat messages:', error)
+        logger.error('Error loading chat messages:', error)
       }
     }
   }
@@ -214,7 +215,7 @@ export function ChatAdmin() {
         loadChatUsers()
       }, 500)
     } catch (error: any) {
-      console.error('Error sending message:', error)
+      logger.error('Error sending message:', error)
       alert("Lỗi gửi tin nhắn: " + (error.message || "Vui lòng thử lại"))
     } finally {
       setIsLoading(false)

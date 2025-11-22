@@ -1,4 +1,5 @@
 import { pool } from './database';
+import { logger } from './logger';
 
 function sanitizeTsQuery(input: string) {
   return input
@@ -25,7 +26,7 @@ export async function addToWishlist(userId: number, productId: number) {
     
     return result.rows[0] || null;
   } catch (error) {
-    console.error('Error adding to wishlist:', error);
+    logger.error('Error adding to wishlist:', error);
     throw error;
   }
 }
@@ -38,7 +39,7 @@ export async function removeFromWishlist(userId: number, productId: number) {
     );
     return { success: true };
   } catch (error) {
-    console.error('Error removing from wishlist:', error);
+    logger.error('Error removing from wishlist:', error);
     throw error;
   }
 }
@@ -59,7 +60,7 @@ export async function getWishlist(userId: number) {
     );
     return result.rows;
   } catch (error) {
-    console.error('Error getting wishlist:', error);
+    logger.error('Error getting wishlist:', error);
     throw error;
   }
 }
@@ -72,7 +73,7 @@ export async function isInWishlist(userId: number, productId: number): Promise<b
     );
     return result.rows.length > 0;
   } catch (error) {
-    console.error('Error checking wishlist:', error);
+    logger.error('Error checking wishlist:', error);
     return false;
   }
 }
@@ -194,7 +195,7 @@ export async function searchProducts(query: string, filters?: {
     const result = await pool.query(sql, params);
     return result.rows;
   } catch (error) {
-    console.error('Error searching products:', error);
+    logger.error('Error searching products:', error);
     throw error;
   }
 }
@@ -211,7 +212,7 @@ export async function trackEvent(eventType: string, eventData: any, userId?: num
       [userId || null, eventType, JSON.stringify(eventData), ipAddress || null, userAgent || null]
     );
   } catch (error) {
-    console.error('Error tracking event:', error);
+    logger.error('Error tracking event:', error);
     // Don't throw - analytics should not break the app
   }
 }
@@ -224,7 +225,7 @@ export async function trackProductView(productId: number, userId?: number, ipAdd
       [productId, userId || null, ipAddress || null]
     );
   } catch (error) {
-    console.error('Error tracking product view:', error);
+    logger.error('Error tracking product view:', error);
   }
 }
 
@@ -241,7 +242,7 @@ export async function getProductViews(productId: number, days: number = 30) {
     );
     return result.rows[0];
   } catch (error) {
-    console.error('Error getting product views:', error);
+    logger.error('Error getting product views:', error);
     throw error;
   }
 }
@@ -270,7 +271,7 @@ export async function getBundles(isActive?: boolean) {
     const result = await pool.query(query, params);
     return result.rows;
   } catch (error) {
-    console.error('Error getting bundles:', error);
+    logger.error('Error getting bundles:', error);
     throw error;
   }
 }
@@ -299,7 +300,7 @@ export async function getBundleWithProducts(bundleId: number) {
       products: productsResult.rows,
     };
   } catch (error) {
-    console.error('Error getting bundle with products:', error);
+    logger.error('Error getting bundle with products:', error);
     throw error;
   }
 }
@@ -332,7 +333,7 @@ export async function voteReview(reviewId: number, userId: number, isHelpful: bo
     
     return result.rows[0];
   } catch (error) {
-    console.error('Error voting review:', error);
+    logger.error('Error voting review:', error);
     throw error;
   }
 }
@@ -354,7 +355,7 @@ export async function getUserSubscription(userId: number) {
     );
     return result.rows[0] || null;
   } catch (error) {
-    console.error('Error getting user subscription:', error);
+    logger.error('Error getting user subscription:', error);
     throw error;
   }
 }

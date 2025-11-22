@@ -57,6 +57,7 @@ Write-Host "[*] Testing database connection..." -ForegroundColor Cyan
 
 $testScript = @"
 const { Pool } = require('pg');
+const { logger } = require('../lib/logger');
 
 const isServerless = process.env.NETLIFY === 'true' || process.env.VERCEL === '1';
 const poolConfig = isServerless
@@ -93,7 +94,7 @@ async function test() {
     await pool.end();
     process.exit(0);
   } catch (error) {
-    console.error('❌ Connection failed:', error.message);
+    logger.error('❌ Connection failed:', error);
     await pool.end();
     process.exit(1);
   }

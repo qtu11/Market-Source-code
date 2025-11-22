@@ -24,7 +24,7 @@ import { Logo } from '@/components/logo'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { getLocalStorage, removeLocalStorage } from '@/lib/localStorage-utils'
-import { logger } from '@/lib/logger'
+import { logger } from '@/lib/logger-client'
 
 const navItems = [
   { href: '/', label: 'Trang chủ', icon: Home },

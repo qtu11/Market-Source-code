@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { apiGet, apiPost } from "@/lib/api-client"
+import { logger } from "@/lib/logger-client"
 
 interface Message {
   id: number
@@ -39,7 +40,7 @@ export function ChatWidget() {
         setCurrentUser(user)
       }
       } catch (error) {
-        console.error("Error parsing user:", error)
+        logger.error("Error parsing user:", error)
     }
   }, [])
 
@@ -93,7 +94,7 @@ export function ChatWidget() {
       if (error.message?.includes('Unauthorized')) {
         console.warn('Chat: User not authenticated')
       } else {
-        console.error('Error loading chat history:', error)
+        logger.error('Error loading chat history:', error)
       }
     }
   }, [currentUser, isOpen])
@@ -155,7 +156,7 @@ export function ChatWidget() {
         loadChatHistory()
       }, 500)
     } catch (error: any) {
-      console.error('Error sending message:', error)
+      logger.error('Error sending message:', error)
       alert("Lỗi gửi tin nhắn: " + (error.message || "Vui lòng thử lại"))
     } finally {
       setIsLoading(false)

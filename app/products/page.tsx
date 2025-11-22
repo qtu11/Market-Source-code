@@ -109,7 +109,7 @@ export default function ProductsPage() {
           // Set empty products và hiển thị error message
           setProducts([]);
           // Log để user biết
-          console.error('⚠️ Database connection failed. Please check Netlify environment variables.');
+          logger.error('⚠️ Database connection failed. Please check Netlify environment variables.');
           return;
         }
         

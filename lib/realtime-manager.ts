@@ -1,5 +1,7 @@
 "use client"
 
+import { logger } from './logger-client'
+
 // Real-time data manager for independent account operations
 export class RealtimeManager {
   private static instance: RealtimeManager
@@ -83,7 +85,7 @@ export class RealtimeManager {
       }
       return allUsers
     } catch (error) {
-      console.error('Error getting user data:', error)
+      logger.error('Error getting user data:', error)
       return []
     }
   }
@@ -120,7 +122,7 @@ export class RealtimeManager {
       this.notifyListeners('users', allUsers)
       return true
     } catch (error) {
-      console.error('Error updating user balance:', error)
+      logger.error('Error updating user balance:', error)
       return false
     }
   }
@@ -165,7 +167,7 @@ export class RealtimeManager {
       
       return true
     } catch (error) {
-      console.error('Error processing deposit:', error)
+      logger.error('Error processing deposit:', error)
       return false
     }
   }
@@ -217,7 +219,7 @@ export class RealtimeManager {
       
       return true
     } catch (error) {
-      console.error('Error processing withdrawal:', error)
+      logger.error('Error processing withdrawal:', error)
       return false
     }
   }
@@ -231,7 +233,7 @@ export class RealtimeManager {
     try {
       return JSON.parse(localStorage.getItem('deposits') || '[]')
     } catch (error) {
-      console.error('Error getting deposits:', error)
+      logger.error('Error getting deposits:', error)
       return []
     }
   }
@@ -241,7 +243,7 @@ export class RealtimeManager {
     try {
       return JSON.parse(localStorage.getItem('withdrawals') || '[]')
     } catch (error) {
-      console.error('Error getting withdrawals:', error)
+      logger.error('Error getting withdrawals:', error)
       return []
     }
   }
@@ -251,7 +253,7 @@ export class RealtimeManager {
     try {
       return JSON.parse(localStorage.getItem('userPurchases') || '[]')
     } catch (error) {
-      console.error('Error getting purchases:', error)
+      logger.error('Error getting purchases:', error)
       return []
     }
   }
@@ -261,7 +263,7 @@ export class RealtimeManager {
     try {
       return JSON.parse(localStorage.getItem('uploadedProducts') || '[]')
     } catch (error) {
-      console.error('Error getting products:', error)
+      logger.error('Error getting products:', error)
       return []
     }
   }
@@ -333,7 +335,7 @@ export class RealtimeManager {
 
       return true
     } catch (error) {
-      console.error('Error adding purchase:', error)
+      logger.error('Error adding purchase:', error)
       return false
     }
   }
@@ -344,7 +346,7 @@ export class RealtimeManager {
       const allPurchases = this.getAllPurchases()
       return allPurchases.filter((p: any) => p.user_id === userId)
     } catch (error) {
-      console.error('Error getting user purchases:', error)
+      logger.error('Error getting user purchases:', error)
       return []
     }
   }
@@ -354,7 +356,7 @@ export class RealtimeManager {
       const allDeposits = this.getAllDeposits()
       return allDeposits.filter((d: any) => d.userEmail === userEmail)
     } catch (error) {
-      console.error('Error getting user deposits:', error)
+      logger.error('Error getting user deposits:', error)
       return []
     }
   }
@@ -364,7 +366,7 @@ export class RealtimeManager {
       const allWithdrawals = this.getAllWithdrawals()
       return allWithdrawals.filter((w: any) => w.userEmail === userEmail)
     } catch (error) {
-      console.error('Error getting user withdrawals:', error)
+      logger.error('Error getting user withdrawals:', error)
       return []
     }
   }
