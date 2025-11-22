@@ -24,14 +24,14 @@ const nextConfig = {
       
       config.externals = [
         ...externalsArray,
-        (context, request, callback) => {
+        ({ context, request }, callback) => {
           // firebase-admin là optional dependency, không bắt buộc
           if (request === 'firebase-admin') {
             return callback(null, `commonjs ${request}`);
           }
           // Call original externals function nếu có
           if (isFunction) {
-            return originalExternals(context, request, callback);
+            return originalExternals({ context, request }, callback);
           }
           callback();
         },

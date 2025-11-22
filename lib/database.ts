@@ -207,33 +207,65 @@ type UserProfilePayload = {
   twoFactorBackupCodes?: string[] | null;
 };
 
-const ensureUserProfilesTablePromise = (async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_profiles (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-        phone VARCHAR(50),
-        address TEXT,
-        city VARCHAR(120),
-        country VARCHAR(120),
-        postal_code VARCHAR(32),
-        social_links JSONB,
-        two_factor_enabled BOOLEAN DEFAULT FALSE,
-        two_factor_secret TEXT,
-        two_factor_backup_codes TEXT[],
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+let ensureUserProfilesTablePromise: Promise<void> | null = null;
+let isEnsuringTable = false;
 
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
-    `);
-  } catch (error) {
-    logger.error('Failed to ensure user_profiles table', error);
+const ensureUserProfilesTable = async () => {
+  // Skip database operations during build time
+  if (shouldSkipDbTest) {
+    return;
   }
-})();
+
+  // Prevent multiple concurrent executions
+  if (isEnsuringTable && ensureUserProfilesTablePromise) {
+    return ensureUserProfilesTablePromise;
+  }
+
+  isEnsuringTable = true;
+  ensureUserProfilesTablePromise = (async () => {
+    try {
+      // Use IF NOT EXISTS to prevent race conditions
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS user_profiles (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+          phone VARCHAR(50),
+          address TEXT,
+          city VARCHAR(120),
+          country VARCHAR(120),
+          postal_code VARCHAR(32),
+          social_links JSONB,
+          two_factor_enabled BOOLEAN DEFAULT FALSE,
+          two_factor_secret TEXT,
+          two_factor_backup_codes TEXT[],
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Use IF NOT EXISTS for index to prevent duplicate key errors
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
+      `);
+    } catch (error: any) {
+      // Ignore duplicate key errors during concurrent table creation
+      // Also ignore network errors during build time
+      if (
+        error?.code !== '23505' && 
+        error?.code !== '42P07' && 
+        error?.code !== 'ENETUNREACH' &&
+        !error?.message?.includes('already exists') &&
+        !error?.message?.includes('ENETUNREACH')
+      ) {
+        logger.error('Failed to ensure user_profiles table', error);
+      }
+    } finally {
+      isEnsuringTable = false;
+    }
+  })();
+
+  return ensureUserProfilesTablePromise;
+};
 
 // ============================================================
 // USER FUNCTIONS
@@ -409,7 +441,7 @@ export async function createOrUpdateUser(userData: {
 }
 
 async function ensureUserProfilesTableReady() {
-  await ensureUserProfilesTablePromise;
+  await ensureUserProfilesTable();
 }
 
 export async function getUserProfileByUserId(userId: number): Promise<UserProfileRow | null> {
