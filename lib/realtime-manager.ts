@@ -75,6 +75,7 @@ export class RealtimeManager {
 
   // Independent account management methods
   public getUserData(userId?: string): any[] {
+    if (typeof window === 'undefined') return []
     try {
       const allUsers = JSON.parse(localStorage.getItem('users') || '[]')
       if (userId) {
@@ -88,6 +89,7 @@ export class RealtimeManager {
   }
 
   public updateUserBalance(userId: string, newBalance: number, adminId: string): boolean {
+    if (typeof window === 'undefined') return false
     try {
       const allUsers = this.getUserData()
       const userIndex = allUsers.findIndex((user: any) => user.uid === userId)
@@ -124,6 +126,7 @@ export class RealtimeManager {
   }
 
   public processDeposit(depositId: string, approved: boolean, adminId: string): boolean {
+    if (typeof window === 'undefined') return false
     try {
       const allDeposits = this.getAllDeposits()
       const depositIndex = allDeposits.findIndex((d: any) => d.id.toString() === depositId)
@@ -168,6 +171,7 @@ export class RealtimeManager {
   }
 
   public processWithdrawal(withdrawalId: string, approved: boolean, adminId: string): boolean {
+    if (typeof window === 'undefined') return false
     try {
       const allWithdrawals = this.getAllWithdrawals()
       const withdrawalIndex = allWithdrawals.findIndex((w: any) => w.id.toString() === withdrawalId)
@@ -223,6 +227,7 @@ export class RealtimeManager {
   }
 
   private getAllDeposits(): any[] {
+    if (typeof window === 'undefined') return []
     try {
       return JSON.parse(localStorage.getItem('deposits') || '[]')
     } catch (error) {
@@ -232,6 +237,7 @@ export class RealtimeManager {
   }
 
   private getAllWithdrawals(): any[] {
+    if (typeof window === 'undefined') return []
     try {
       return JSON.parse(localStorage.getItem('withdrawals') || '[]')
     } catch (error) {
@@ -241,6 +247,7 @@ export class RealtimeManager {
   }
 
   private getAllPurchases(): any[] {
+    if (typeof window === 'undefined') return []
     try {
       return JSON.parse(localStorage.getItem('userPurchases') || '[]')
     } catch (error) {
@@ -250,6 +257,7 @@ export class RealtimeManager {
   }
 
   private getAllProducts(): any[] {
+    if (typeof window === 'undefined') return []
     try {
       return JSON.parse(localStorage.getItem('uploadedProducts') || '[]')
     } catch (error) {
@@ -260,6 +268,7 @@ export class RealtimeManager {
 
   // Add purchase with independent user balance management
   public addPurchase(userId: string, product: any, amount: number): boolean {
+    if (typeof window === 'undefined') return false
     try {
       const allUsers = this.getUserData()
       const userIndex = allUsers.findIndex((u: any) => u.uid === userId)

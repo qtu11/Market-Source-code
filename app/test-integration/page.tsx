@@ -149,9 +149,11 @@ export default function TestIntegrationPage() {
       }
 
       // Save test deposit
-      const existingDeposits = JSON.parse(localStorage.getItem('deposits') || '[]')
+      const existingDeposits = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('deposits') || '[]') : []
       existingDeposits.push(testDeposit)
-      localStorage.setItem('deposits', JSON.stringify(existingDeposits))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('deposits', JSON.stringify(existingDeposits))
+      }
 
       // Test deposit processing
       const initialBalance = realtimeManager.getUserData("test-user-1")[0]?.balance || 0
@@ -188,9 +190,11 @@ export default function TestIntegrationPage() {
         timestamp: new Date().toISOString()
       }
 
-      const existingWithdrawals = JSON.parse(localStorage.getItem('withdrawals') || '[]')
+      const existingWithdrawals = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('withdrawals') || '[]') : []
       existingWithdrawals.push(testWithdrawal)
-      localStorage.setItem('withdrawals', JSON.stringify(existingWithdrawals))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('withdrawals', JSON.stringify(existingWithdrawals))
+      }
 
       const withdrawalProcessed = realtimeManager.processWithdrawal(testWithdrawal.id.toString(), true, "admin-test")
       

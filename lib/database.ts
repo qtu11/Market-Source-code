@@ -37,12 +37,13 @@ const poolConfig = isServerless
     };
 
 // PostgreSQL Connection Pool với fallback
-function createPool() {
+function createPool(): Pool {
   // Validate config trước
   const hasValidConfig = validateDatabaseConfig();
-  if (!hasValidConfig && isServerless) {
-    // Return a mock pool that will fail gracefully
-    return null as any; // TypeScript workaround
+  if (!hasValidConfig) {
+    // Trong build time, throw error để developer biết cần set env vars
+    // Trong runtime, sẽ fail gracefully khi query
+    throw new Error('Database configuration is required. Please set DATABASE_URL or DB_* environment variables in Netlify.');
   }
 
   // Ưu tiên DATABASE_URL nếu có
@@ -123,25 +124,34 @@ let poolInstance: Pool | null = null;
 
 function getPoolInstance(): Pool {
   if (!poolInstance) {
-    poolInstance = createPool();
-    // Error handler
-    poolInstance.on('error', (err) => {
-      logger.error('Unexpected error on idle PostgreSQL client', err, {
-        hasDatabaseUrl: !!process.env.DATABASE_URL,
-        host: process.env.DB_HOST || 'localhost',
-        port: process.env.DB_PORT || '5433',
-        database: process.env.DB_NAME || 'qtusdevmarket',
-        isServerless: process.env.NETLIFY === 'true' || process.env.VERCEL === '1',
-      });
-      
-      // Reset pool instance on error để tạo lại connection
-      // (quan trọng cho serverless environment)
-      if (process.env.NETLIFY === 'true' || process.env.VERCEL === '1') {
-        poolInstance = null;
+    try {
+      poolInstance = createPool();
+      // Error handler - chỉ thêm nếu poolInstance không null
+      if (poolInstance) {
+        poolInstance.on('error', (err) => {
+          logger.error('Unexpected error on idle PostgreSQL client', err, {
+            hasDatabaseUrl: !!process.env.DATABASE_URL,
+            host: process.env.DB_HOST || 'localhost',
+            port: process.env.DB_PORT || '5433',
+            database: process.env.DB_NAME || 'qtusdevmarket',
+            isServerless: process.env.NETLIFY === 'true' || process.env.VERCEL === '1',
+          });
+          
+          // Reset pool instance on error để tạo lại connection
+          // (quan trọng cho serverless environment)
+          if (process.env.NETLIFY === 'true' || process.env.VERCEL === '1') {
+            poolInstance = null;
+          }
+        });
       }
-    });
+    } catch (error) {
+      // Nếu createPool() throw error, log và rethrow
+      logger.error('Failed to create database pool', error);
+      throw error;
+    }
   }
-  return poolInstance;
+  // TypeScript assertion: poolInstance không thể null ở đây vì đã được tạo hoặc throw error
+  return poolInstance!;
 }
 
 // Helper function để retry query với exponential backoff
