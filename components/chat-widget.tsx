@@ -73,19 +73,21 @@ export function ChatWidget() {
       })
 
       // Count unread messages (messages from admin that user hasn't seen)
-      const lastSeenMessageId = parseInt(localStorage.getItem('lastSeenMessageId') || '0')
-      const unread = sortedMessages.filter(
-        (m) => m.isAdmin && m.id > lastSeenMessageId
-      ).length
+      if (typeof window !== 'undefined') {
+        const lastSeenMessageId = parseInt(localStorage.getItem('lastSeenMessageId') || '0')
+        const unread = sortedMessages.filter(
+          (m) => m.isAdmin && m.id > lastSeenMessageId
+        ).length
+        setUnreadCount(unread)
 
-      setUnreadCount(unread)
-      setMessages(sortedMessages)
-
-      // Update last seen message ID (only if chat is open)
-      if (isOpen && sortedMessages.length > 0) {
-        const lastMessageId = sortedMessages[sortedMessages.length - 1].id
-        localStorage.setItem('lastSeenMessageId', lastMessageId.toString())
+        // Update last seen message ID (only if chat is open)
+        if (isOpen && sortedMessages.length > 0) {
+          const lastMessageId = sortedMessages[sortedMessages.length - 1].id
+          localStorage.setItem('lastSeenMessageId', lastMessageId.toString())
+        }
       }
+      
+      setMessages(sortedMessages)
     } catch (error: any) {
       // ✅ Better error handling - don't spam console if it's just auth error
       if (error.message?.includes('Unauthorized')) {
