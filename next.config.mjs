@@ -13,6 +13,13 @@ const nextConfig = {
         tls: false,
         crypto: false,
       };
+      
+      // ✅ FIX: Đảm bảo chỉ có 1 instance của React để tránh lỗi ReactCurrentBatchConfig
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'react': require.resolve('react'),
+        'react-dom': require.resolve('react-dom'),
+      };
     }
     
     // Cho phép optional dependencies như firebase-admin được resolve ở runtime

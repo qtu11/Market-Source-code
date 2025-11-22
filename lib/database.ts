@@ -1249,7 +1249,15 @@ async function hasDownloadCountColumn(): Promise<boolean> {
     return _hasDownloadCountCache;
   }
   try {
-    const result = await pool.query(`
+    // ✅ FIX: Check pool instance trước khi query
+    const instance = getPoolInstance();
+    if (!instance) {
+      logger.warn('Database pool instance is null, assuming download_count column does not exist');
+      _hasDownloadCountCache = false;
+      return false;
+    }
+    
+    const result = await instance.query(`
       SELECT EXISTS (
         SELECT 1 FROM information_schema.columns 
         WHERE table_name = 'products' AND column_name = 'download_count'
@@ -1258,8 +1266,12 @@ async function hasDownloadCountColumn(): Promise<boolean> {
     const exists = result.rows[0]?.exists || false;
     _hasDownloadCountCache = Boolean(exists);
     return _hasDownloadCountCache;
-  } catch (error) {
-    // Nếu lỗi, assume column không tồn tại
+  } catch (error: any) {
+    // ✅ FIX: Log error và assume column không tồn tại
+    logger.warn('Error checking download_count column, assuming it does not exist', {
+      error: error?.message || String(error),
+      code: error?.code
+    });
     _hasDownloadCountCache = false;
     return false;
   }
@@ -1272,6 +1284,12 @@ export async function getProducts(filters?: {
   offset?: number;
 }) {
   try {
+    // ✅ FIX: Check pool instance trước khi query
+    const instance = getPoolInstance();
+    if (!instance) {
+      throw new Error('Database connection failed. Pool instance is null.');
+    }
+    
     // ✅ FIX: Check xem cột download_count có tồn tại không
     const hasDownloadCount = await hasDownloadCountColumn();
 
@@ -1313,20 +1331,30 @@ export async function getProducts(filters?: {
       params.push(filters.offset);
     }
 
-    const result = await pool.query(query, params);
-    return result.rows;
+    const result = await instance.query(query, params);
+    return result.rows || [];
   } catch (error: any) {
-    const { logger } = await import('@/lib/logger');
-    logger.error('Error getting products', error);
+    logger.error('Error getting products', error, {
+      filters,
+      hasPool: !!getPoolInstance(),
+      errorCode: error?.code,
+      errorMessage: error?.message
+    });
     
     // ✅ FIX: Nếu là database connection error, throw với message rõ ràng
     if (error?.message?.includes('Pool instance is null') || 
         error?.message?.includes('Database connection failed') ||
         error?.code === 'ENOTFOUND' ||
-        error?.code === 'ECONNREFUSED') {
+        error?.code === 'ECONNREFUSED' ||
+        error?.code === 'ETIMEDOUT') {
       const dbError = new Error('Database connection failed. Please check environment variables.');
       (dbError as any).code = error?.code || 'DB_CONNECTION_FAILED';
       throw dbError;
+    }
+    
+    // ✅ FIX: Nếu là lỗi SQL, log và throw
+    if (error?.code === '42P01' || error?.code === '42703') {
+      logger.error('SQL error in getProducts - possible schema mismatch', error);
     }
     
     throw error;

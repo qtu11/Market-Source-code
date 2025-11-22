@@ -56,27 +56,48 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      products,
-      count: products.length,
+      products: products || [],
+      count: products?.length || 0,
     });
   } catch (error: unknown) {
     logError('Products GET', error);
     
     // ✅ FIX: Check if it's a database connection error
     if (error instanceof Error) {
-      if (error.message?.includes('ENOTFOUND') || error.message?.includes('getaddrinfo')) {
+      // Database connection errors
+      if (error.message?.includes('ENOTFOUND') || 
+          error.message?.includes('getaddrinfo') ||
+          error.message?.includes('Database connection failed') ||
+          error.message?.includes('Pool instance is null')) {
         return NextResponse.json({
           success: false,
           error: 'Database connection failed. Please check environment variables.',
-          details: process.env.NETLIFY ? 'Database configuration missing on Netlify' : error.message
+          details: process.env.NETLIFY ? 'Database configuration missing on Netlify' : error.message,
+          products: [],
+          count: 0
         }, { status: 503 }); // Service Unavailable
+      }
+      
+      // SQL syntax errors
+      if (error.message?.includes('syntax error') || 
+          error.message?.includes('column') && error.message?.includes('does not exist')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Database query error. Please check database schema.',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+          products: [],
+          count: 0
+        }, { status: 500 });
       }
     }
     
-    return NextResponse.json(
-      createErrorResponse(error, 500),
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch products',
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined,
+      products: [],
+      count: 0
+    }, { status: 500 });
   }
 }
 
