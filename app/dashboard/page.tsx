@@ -893,7 +893,7 @@ export default function DashboardPage() {
         }
         
         if (!completeUser) {
-          console.log('❌ User not found, redirecting to login')
+          logger.warn('User not found, redirecting to login')
           router.push("/auth/login")
           return
         }
