@@ -72,7 +72,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           success: false,
           error: 'Database connection failed. Please check environment variables.',
-          details: process.env.NETLIFY ? 'Database configuration missing on Netlify' : error.message,
+          details: (process.env.NETLIFY === 'true' || process.env.CONTEXT) 
+            ? 'Database configuration missing on Netlify. Please set DATABASE_URL or NETLIFY_DATABASE_URL in Netlify dashboard.' 
+            : error.message,
           products: [],
           count: 0
         }, { status: 503 }); // Service Unavailable

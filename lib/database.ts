@@ -1,13 +1,19 @@
 import { Pool, PoolClient } from 'pg';
 import { logger } from './logger';
 
+// ✅ FIX: Detect Netlify environment (Netlify sets NETLIFY=true during build, CONTEXT during runtime)
+const isNetlify = process.env.NETLIFY === 'true' || 
+                  process.env.CONTEXT === 'production' || 
+                  process.env.CONTEXT === 'deploy-preview' ||
+                  process.env.NETLIFY_DEV === 'true';
+
 const shouldSkipDbTest =
   process.env.SKIP_DB_CHECK === 'true' ||
-  process.env.NETLIFY === 'true' ||
+  isNetlify ||
   process.env.VERCEL === '1';
 
 // Detect serverless environment
-const isServerless = process.env.NETLIFY === 'true' || process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+const isServerless = isNetlify || process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
 // Thêm function để validate database connection
 function validateDatabaseConfig() {
@@ -46,31 +52,50 @@ function createPool(): Pool {
     throw new Error('Database configuration is required. Please set DATABASE_URL or DB_* environment variables in Netlify.');
   }
 
-  // Ưu tiên DATABASE_URL nếu có
-  if (process.env.DATABASE_URL) {
+  // ✅ FIX: Ưu tiên DATABASE_URL hoặc NETLIFY_DATABASE_URL (Netlify specific)
+  const databaseUrl = process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL;
+  
+  if (databaseUrl) {
     try {
       const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: databaseUrl,
         ...poolConfig,
+        // ✅ FIX: Thêm SSL mode cho Supabase
+        ssl: isNetlify ? {
+          rejectUnauthorized: false
+        } : undefined,
       });
 
       if (shouldSkipDbTest) {
-        logger.info('Skipping PostgreSQL connection test via DATABASE_URL (build environment)');
+        logger.info('Skipping PostgreSQL connection test via DATABASE_URL (build environment)', {
+          isNetlify,
+          hasNetlifyDatabaseUrl: !!process.env.NETLIFY_DATABASE_URL
+        });
       } else {
         // Test connection async (không block)
         pool
           .query('SELECT NOW()')
           .then(() => {
-            logger.info('PostgreSQL connection successful via DATABASE_URL');
+            logger.info('PostgreSQL connection successful via DATABASE_URL', {
+              isNetlify,
+              hasNetlifyDatabaseUrl: !!process.env.NETLIFY_DATABASE_URL
+            });
           })
           .catch((err) => {
-            logger.warn('DATABASE_URL connection test failed', { error: err.message });
+            logger.warn('DATABASE_URL connection test failed', { 
+              error: err.message,
+              isNetlify,
+              code: (err as any)?.code
+            });
           });
       }
 
       return pool;
     } catch (error: any) {
-      logger.warn('Failed to parse DATABASE_URL, using individual variables', { error: error.message });
+      logger.warn('Failed to parse DATABASE_URL, using individual variables', { 
+        error: error.message,
+        isNetlify
+      });
     }
   }
 
@@ -125,37 +150,43 @@ let poolInstance: Pool | null = null;
 function getPoolInstance(): Pool | null {
   if (!poolInstance) {
     try {
-      poolInstance = createPool();
+    poolInstance = createPool();
       // Error handler - chỉ thêm nếu poolInstance không null
       if (poolInstance) {
-        poolInstance.on('error', (err) => {
-          logger.error('Unexpected error on idle PostgreSQL client', err, {
-            hasDatabaseUrl: !!process.env.DATABASE_URL,
-            host: process.env.DB_HOST || 'localhost',
-            port: process.env.DB_PORT || '5433',
-            database: process.env.DB_NAME || 'qtusdevmarket',
-            isServerless: process.env.NETLIFY === 'true' || process.env.VERCEL === '1',
-            errorCode: (err as any)?.code,
-            errorMessage: err.message,
-          });
-          
-          // Reset pool instance on error để tạo lại connection
-          // (quan trọng cho serverless environment)
-          if (process.env.NETLIFY === 'true' || process.env.VERCEL === '1') {
-            poolInstance = null;
-          }
-        });
+    poolInstance.on('error', (err) => {
+      logger.error('Unexpected error on idle PostgreSQL client', err, {
+        hasDatabaseUrl: !!(process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL),
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || '5433',
+        database: process.env.DB_NAME || 'qtusdevmarket',
+        isServerless,
+        isNetlify,
+        errorCode: (err as any)?.code,
+        errorMessage: err.message,
+      });
+      
+      // Reset pool instance on error để tạo lại connection
+      // (quan trọng cho serverless environment)
+      if (isServerless) {
+        poolInstance = null;
+      }
+    });
         
         // ✅ FIX: Test connection ngay sau khi tạo pool (chỉ trong serverless)
         if (isServerless) {
           poolInstance.query('SELECT 1')
             .then(() => {
-              logger.info('Database pool connection test successful (serverless)');
+              logger.info('Database pool connection test successful (serverless)', {
+                isNetlify,
+                hasNetlifyDatabaseUrl: !!process.env.NETLIFY_DATABASE_URL
+              });
             })
             .catch((err) => {
               logger.warn('Database pool connection test failed (serverless)', {
                 error: err.message,
                 code: (err as any)?.code,
+                isNetlify,
+                hasNetlifyDatabaseUrl: !!process.env.NETLIFY_DATABASE_URL
               });
               // Reset pool nếu test fail
               poolInstance = null;
@@ -1681,9 +1712,9 @@ export async function trackDownload(downloadData: {
       downloadResult = await client.query(
         `UPDATE downloads 
          SET downloaded_at = CURRENT_TIMESTAMP,
-             ip_address = $3,
-             user_agent = $4
-         WHERE id = $5
+             ip_address = $1,
+             user_agent = $2
+         WHERE id = $3
          RETURNING id, downloaded_at`,
         [
           downloadData.ipAddress || null,
