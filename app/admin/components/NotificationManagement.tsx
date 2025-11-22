@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { logger } from "@/lib/logger-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -55,7 +56,7 @@ export function NotificationManagement() {
         setUsers(result.users)
       }
     } catch (error) {
-      console.error('Error loading users:', error)
+      logger.error('Error loading users', error)
     }
   }, [])
 
@@ -74,7 +75,7 @@ export function NotificationManagement() {
         setNotifications(sorted)
       }
     } catch (error) {
-      console.error('Error loading notifications:', error)
+      logger.error('Error loading notifications', error)
       // Fallback: Load từ user notifications nếu admin endpoint chưa có
       setNotifications([])
     } finally {
@@ -161,7 +162,7 @@ export function NotificationManagement() {
       // Reload notifications
       loadNotifications()
     } catch (error: any) {
-      console.error('Error sending notification:', error)
+      logger.error('Error sending notification', error)
       alert("Có lỗi xảy ra khi gửi thông báo: " + (error.message || "Vui lòng thử lại"))
     }
   }, [newNotification, users, loadNotifications])

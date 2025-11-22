@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
+import { logger } from "@/lib/logger-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,7 +46,7 @@ export default function Product({ products, setProducts, adminUser }: ProductPro
           setProducts(mappedProducts);
         }
       } catch (error) {
-        console.error('Error loading products:', error);
+        logger.error('Error loading products', error);
         // Fallback to localStorage nếu API fail
         const loadedProducts = JSON.parse(localStorage.getItem("uploadedProducts") || "[]");
         setProducts(loadedProducts);
@@ -103,7 +104,7 @@ export default function Product({ products, setProducts, adminUser }: ProductPro
         throw new Error(result.error || 'Failed to create product');
       }
     } catch (error: any) {
-      console.error("Error adding product:", error)
+      logger.error("Error adding product", error)
       alert("Có lỗi xảy ra khi thêm sản phẩm: " + (error.message || "Vui lòng thử lại"))
     } finally {
       setIsLoading(false);
@@ -155,7 +156,7 @@ export default function Product({ products, setProducts, adminUser }: ProductPro
         throw new Error(result.error || 'Failed to update product');
       }
     } catch (error: any) {
-      console.error("Error editing product:", error)
+      logger.error("Error editing product", error)
       alert("Có lỗi xảy ra khi cập nhật sản phẩm: " + (error.message || "Vui lòng thử lại"))
     } finally {
       setIsLoading(false);
@@ -188,7 +189,7 @@ export default function Product({ products, setProducts, adminUser }: ProductPro
         throw new Error(result.error || 'Failed to delete product');
       }
     } catch (error: any) {
-      console.error("Error deleting product:", error)
+      logger.error("Error deleting product", error)
       alert("Có lỗi xảy ra khi xóa sản phẩm: " + (error.message || "Vui lòng thử lại"))
     } finally {
       setIsLoading(false);

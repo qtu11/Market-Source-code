@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { logger } from "@/lib/logger-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -61,7 +62,7 @@ export function CustomerSupport({ users, adminUser }: CustomerSupportProps) {
         setMessages(result.messages);
       }
     } catch (error) {
-      console.warn('Error loading messages from API:', error);
+      logger.warn('Error loading messages from API', { error });
     }
   }
 
@@ -91,7 +92,7 @@ export function CustomerSupport({ users, adminUser }: CustomerSupportProps) {
         isAdmin: true,
       });
     } catch (apiError) {
-      console.error('Error sending message via API:', apiError);
+      logger.error('Error sending message via API', apiError);
     }
 
     // Send notification to user
@@ -122,7 +123,7 @@ export function CustomerSupport({ users, adminUser }: CustomerSupportProps) {
           chatId: process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID
         })
       }).catch((error) => {
-        console.error('Failed to send Telegram notification:', error);
+        logger.error('Failed to send Telegram notification', error);
       })
 
       // Save notification
@@ -137,7 +138,7 @@ export function CustomerSupport({ users, adminUser }: CustomerSupportProps) {
       })
       localStorage.setItem("adminNotifications", JSON.stringify(notifications))
     } catch (error) {
-      console.error("Error sending notification:", error)
+      logger.error("Error sending notification", error)
     }
 
     setNewMessage("")

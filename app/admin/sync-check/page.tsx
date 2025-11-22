@@ -1,5 +1,7 @@
 "use client"
 
+import { logger } from "@/lib/logger-client"
+
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,7 +37,7 @@ export default function SyncCheckPage() {
       const allUsers = await userManager.getAllUsers()
       setUsers(allUsers)
     } catch (error) {
-      console.error('Error loading users:', error)
+      logger.error('Error loading users', error)
     }
   }
 
@@ -87,7 +89,7 @@ export default function SyncCheckPage() {
             }
           }
         } catch (error) {
-          console.warn('Firestore check failed for', user.uid, error)
+          logger.warn('Firestore check failed', { uid: user.uid, error })
         }
 
         statuses.push(status)
@@ -103,7 +105,7 @@ export default function SyncCheckPage() {
         desynced
       })
     } catch (error) {
-      console.error('Error checking sync:', error)
+      logger.error('Error checking sync', error)
     } finally {
       setIsLoading(false)
     }
@@ -118,7 +120,7 @@ export default function SyncCheckPage() {
         checkSync() // Re-check
       }
     } catch (error) {
-      console.error('Force sync failed:', error)
+      logger.error('Force sync failed', error)
       alert('Lỗi khi đồng bộ')
     }
   }

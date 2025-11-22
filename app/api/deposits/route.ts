@@ -217,10 +217,8 @@ export async function PUT(request: NextRequest): Promise<Response> {
       const loggerModule = await import('@/lib/logger');
       logger = loggerModule.logger;
     } catch {
-      // Fallback to console nếu không import được logger
-      logger = {
-        error: (msg: string, err: unknown, meta?: unknown) => console.error(msg, err, meta)
-      };
+      // Fallback: logger đã được import ở trên, không cần fallback
+      logger = loggerModule.logger;
     }
     logger.error('Deposit PUT error', error, { endpoint: '/api/deposits' });
     

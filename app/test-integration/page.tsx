@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { logger } from "@/lib/logger-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -400,7 +401,7 @@ export default function TestIntegrationPage() {
           products: products.length
         })
       } catch (error) {
-        console.error('Error updating stats:', error)
+        logger.error('Error updating stats', error)
       }
     }
 
@@ -434,7 +435,7 @@ export default function TestIntegrationPage() {
 
       alert('Test data cleaned up successfully!')
     } catch (error) {
-      console.error('Error cleaning up test data:', error)
+      logger.error('Error cleaning up test data', error)
       alert('Error cleaning up test data')
     }
   }
