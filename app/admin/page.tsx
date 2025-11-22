@@ -1,5 +1,10 @@
 "use client"
 
+// Route segment config - must be before imports
+export const dynamic = 'force-dynamic'
+export const dynamicParams = true
+export const runtime = 'nodejs'
+
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { LoadingSpinner } from "@/components/LoadingSpinner"

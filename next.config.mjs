@@ -90,6 +90,10 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  // Skip static generation for admin routes
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
 }
 
 export default nextConfig;
