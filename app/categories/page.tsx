@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { logger } from "@/lib/logger-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -74,7 +75,7 @@ export default function CategoriesPage() {
           setProducts(mappedProducts);
         }
       } catch (error) {
-        console.error('Error loading products:', error);
+        logger.error('Error loading products', error);
         // Fallback to localStorage nếu API fail
         const uploadedProducts = JSON.parse(localStorage.getItem("uploadedProducts") || "[]");
         setProducts(uploadedProducts);

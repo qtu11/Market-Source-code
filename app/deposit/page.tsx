@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { logger } from "@/lib/logger-client"
 import { Logo } from "@/components/logo"
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -133,7 +134,7 @@ export default function DepositPage() {
         new Date(b.requestTime).getTime() - new Date(a.requestTime).getTime()
       ));
     } catch (error) {
-      console.error("Error loading deposits:", error);
+      logger.error("Error loading deposits", error);
       // Fallback to localStorage nếu API fail
       try {
         const allDeposits = JSON.parse(localStorage.getItem("deposits") || "[]");
@@ -142,7 +143,7 @@ export default function DepositPage() {
           new Date(b.requestTime).getTime() - new Date(a.requestTime).getTime()
         ));
       } catch (localError) {
-        console.error("Error loading from localStorage:", localError);
+        logger.error("Error loading from localStorage", localError);
       }
     }
   }
@@ -210,9 +211,9 @@ export default function DepositPage() {
             : new Date().toLocaleString("vi-VN")
         };
 
-        console.log('✅ Deposit saved to PostgreSQL:', result);
+        logger.debug('Deposit saved to PostgreSQL', { result });
       } catch (apiError: any) {
-        console.error('❌ API error, saving to localStorage as fallback:', apiError);
+        logger.error('API error, saving to localStorage as fallback', apiError);
         
         // Fallback: Save to localStorage nếu API fail
         depositRequest = {

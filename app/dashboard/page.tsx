@@ -547,7 +547,7 @@ export default function DashboardPage() {
         pendingCommission: result.pendingCommission || 0,
       })
     } catch (error) {
-      console.warn("Referral fallback", error)
+      logger.warn("Referral fallback", { error })
       setReferralMeta({
         code: user?.referralCode || user?.uid || "qtusdev",
         totalCommission: 0,
@@ -576,7 +576,7 @@ export default function DashboardPage() {
       setCouponList(coupons)
       setLocalStorage("userCoupons", coupons)
     } catch (error) {
-      console.warn("Coupons fallback", error)
+      logger.warn("Coupons fallback", { error })
       try {
         const stored = getLocalStorage<Coupon[]>("userCoupons", [])
         setCouponList(stored)
@@ -608,7 +608,7 @@ export default function DashboardPage() {
       setDeviceSessions(mapped)
       setLocalStorage("userSessions", mapped)
     } catch (error) {
-      console.warn("Sessions fallback", error)
+      logger.warn("Sessions fallback", { error })
       try {
         const stored = getLocalStorage<DeviceSession[]>("userSessions", [])
         setDeviceSessions(stored)
@@ -725,7 +725,7 @@ export default function DashboardPage() {
         })
         await loadCoupons(currentUser)
       } catch (error) {
-        console.error("Apply coupon failed", error)
+        logger.error("Apply coupon failed", error)
       } finally {
         setIsApplyingCoupon(false)
       }
@@ -737,7 +737,7 @@ export default function DashboardPage() {
     try {
       navigator.clipboard.writeText(link)
     } catch (error) {
-      console.warn("Clipboard copy failed", error)
+      logger.warn("Clipboard copy failed", { error })
     }
   }, [])
 
@@ -776,7 +776,7 @@ export default function DashboardPage() {
         try {
           const parsed = typeof savedUser === 'string' ? JSON.parse(savedUser) : savedUser;
           if (parsed && parsed.email === session.user.email) {
-            console.log('✅ OAuth user already saved');
+            logger.debug('OAuth user already saved');
             return;
           }
 
@@ -786,7 +786,7 @@ export default function DashboardPage() {
       }
 
       // Save OAuth user to localStorage
-      console.log('🔄 Saving NextAuth session to localStorage...');
+      logger.debug('Saving NextAuth session to localStorage');
       const saveOAuthUser = async () => {
         try {
           const response = await fetch('/api/auth-callback', {
@@ -807,7 +807,7 @@ export default function DashboardPage() {
             
             // Check if user data exists
             if (!data.user || !data.user.uid) {
-              console.error('User data or uid not found in response');
+              logger.error('User data or uid not found in response');
               return;
             }
             
@@ -815,12 +815,12 @@ export default function DashboardPage() {
             const { userManager } = await import('@/lib/userManager');
             await userManager.saveUserData(data.user.uid, data.user);
             
-            console.log('✅ OAuth user saved to localStorage from dashboard');
+            logger.debug('OAuth user saved to localStorage from dashboard');
             // Reload page to refresh user data
             window.location.reload();
           }
         } catch (error) {
-          console.error('❌ Error saving OAuth user in dashboard:', error);
+          logger.error('Error saving OAuth user in dashboard', error);
         }
       };
 
@@ -843,9 +843,9 @@ export default function DashboardPage() {
           browser: device.browser,
           os: device.os
         })
-        console.log('📱 User info:', { ip, device })
+        logger.debug('User info', { ip, device })
       } catch (error) {
-        console.error('Error fetching user info:', error)
+        logger.error('Error fetching user info', error)
         setUserIP('Unknown')
         setDeviceInfo({ userAgent: 'Unknown', platform: 'Unknown', language: 'Unknown', deviceType: 'Unknown', browser: 'Unknown', os: 'Unknown' })
       }
@@ -864,7 +864,7 @@ export default function DashboardPage() {
         
         // Check login status
         if (!userManager.isLoggedIn()) {
-          console.log('❌ User not authenticated, redirecting to login')
+          logger.warn('User not authenticated, redirecting to login')
           router.push("/auth/login")
           return
         }
@@ -886,7 +886,7 @@ export default function DashboardPage() {
           try {
             completeUser = JSON.parse(userStr) as User & UserData;
           } catch (parseError) {
-            console.error('Error parsing user:', parseError);
+            logger.error('Error parsing user', parseError);
             router.push("/auth/login")
             return
           }
@@ -898,7 +898,7 @@ export default function DashboardPage() {
           return
         }
         
-        console.log('✅ User found:', {
+        logger.debug('User found', {
           uid: completeUser.uid,
           email: completeUser.email,
           provider: completeUser.provider,
@@ -930,12 +930,12 @@ export default function DashboardPage() {
               completeUser = mergedUser
             }
           } catch (syncError) {
-            console.warn('Error syncing user data:', syncError);
+            logger.warn('Error syncing user data', { error: syncError });
           }
         }
         
         if (!completeUser || !completeUser.id) {
-          console.error('❌ User data is null or missing id after loading')
+          logger.error('User data is null or missing id after loading')
           router.push("/auth/login")
           return
         }
@@ -951,7 +951,7 @@ export default function DashboardPage() {
           await userManager.saveUserData(completeUser.uid, normalizedUserForManager)
         }
         
-        console.log('✅ User data synced and set:', {
+        logger.debug('User data synced and set', {
           uid: completeUser.uid,
           email: completeUser.email,
           balance: completeUser.balance,
@@ -991,13 +991,13 @@ export default function DashboardPage() {
             }));
             
               setUserPurchases(mappedPurchases);
-              console.log('📦 User purchases loaded from API:', mappedPurchases.length);
+              logger.debug('User purchases loaded from API', { count: mappedPurchases.length });
             } catch (purchaseError: any) {
               // Only show error if it's not 401 (unauthorized)
               if (purchaseError.message?.includes('Unauthorized')) {
-                console.warn('User not authenticated, skipping purchases load');
+                logger.warn('User not authenticated, skipping purchases load');
               } else {
-                console.error('Error loading purchases from API:', purchaseError);
+                logger.error('Error loading purchases from API', purchaseError);
               }
               // Fallback to localStorage
               try {
@@ -1013,7 +1013,7 @@ export default function DashboardPage() {
         });
                 setUserPurchases(userPurchasesList);
               } catch (localError) {
-                console.error('Error loading from localStorage:', localError);
+                logger.error('Error loading from localStorage', localError);
               }
             }
           }
@@ -1046,12 +1046,12 @@ export default function DashboardPage() {
             }));
             
               setDepositHistory(mappedDeposits);
-              console.log('💰 User deposits loaded from API:', mappedDeposits.length);
+              logger.debug('User deposits loaded from API', { count: mappedDeposits.length });
             } catch (depositError: any) {
               if (depositError.message?.includes('Unauthorized')) {
                 console.warn('User not authenticated, skipping deposits load');
               } else {
-                console.error('Error loading deposits from API:', depositError);
+                logger.error('Error loading deposits from API', depositError);
               }
               // Fallback to localStorage
               try {
@@ -1069,7 +1069,7 @@ export default function DashboardPage() {
         });
                 setDepositHistory(userDeposits);
               } catch (localError) {
-                console.error('Error loading from localStorage:', localError);
+                logger.error('Error loading from localStorage', localError);
               }
             }
           }
@@ -1102,12 +1102,12 @@ export default function DashboardPage() {
             }));
             
               setWithdrawHistory(mappedWithdrawals);
-              console.log('💸 User withdrawals loaded from API:', mappedWithdrawals.length);
+              logger.debug('User withdrawals loaded from API', { count: mappedWithdrawals.length });
             } catch (withdrawalError: any) {
               if (withdrawalError.message?.includes('Unauthorized')) {
                 console.warn('User not authenticated, skipping withdrawals load');
               } else {
-                console.error('Error loading withdrawals from API:', withdrawalError);
+                logger.error('Error loading withdrawals from API', withdrawalError);
               }
               // Fallback to localStorage
               try {
@@ -1125,12 +1125,12 @@ export default function DashboardPage() {
         });
                 setWithdrawHistory(userWithdrawals);
               } catch (localError) {
-                console.error('Error loading from localStorage:', localError);
+                logger.error('Error loading from localStorage', localError);
               }
             }
           }
         } catch (error) {
-          console.error('Error loading data from API:', error);
+          logger.error('Error loading data from API', error);
         }
 
         // ✅ FIX: Chỉ send notification một lần khi dashboard được load lần đầu
@@ -1143,7 +1143,7 @@ export default function DashboardPage() {
 
         setIsLoading(false)
       } catch (error) {
-        console.error('❌ Error parsing user data:', error)
+        logger.error('Error parsing user data', error)
         router.push("/auth/login")
         setIsLoading(false)
       }
@@ -1179,7 +1179,7 @@ export default function DashboardPage() {
         }))
       }
     } catch (error) {
-      console.error('Error loading user preferences:', error)
+      logger.error('Error loading user preferences', error)
     }
   }, [currentUser?.uid])
 
@@ -1276,7 +1276,7 @@ export default function DashboardPage() {
             }
           } catch (error: any) {
             if (error.name !== 'AbortError') {
-              console.error('Error refreshing purchases:', error);
+              logger.error('Error refreshing purchases', error);
             }
           }
         }
@@ -1383,7 +1383,7 @@ export default function DashboardPage() {
 
       } catch (error: any) {
         if (error.name !== 'AbortError') {
-          console.error('❌ Error in real-time update:', error);
+          logger.error('Error in real-time update', error);
         }
       } finally {
         isUpdating = false;
@@ -1524,7 +1524,7 @@ export default function DashboardPage() {
         alert("Đã sao chép wishlist vào clipboard!")
       }
     } catch (error) {
-      console.error("Share wishlist error:", error)
+      logger.error("Share wishlist error", error)
     }
   }
 

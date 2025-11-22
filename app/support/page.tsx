@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { logger } from "@/lib/logger-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -52,7 +53,7 @@ export default function SupportPage() {
       
       setChatMessages(sortedMessages);
     } catch (error) {
-      console.error('Error loading chat history:', error)
+      logger.error('Error loading chat history', error)
       // Don't show error to user, just log
     }
   }, [currentUser])
@@ -72,7 +73,7 @@ export default function SupportPage() {
           }));
         }
       } catch (error) {
-        console.error("Error loading user:", error);
+        logger.error("Error loading user", error);
         // Fallback to localStorage
         const userStr = localStorage.getItem("currentUser") || localStorage.getItem("qtusdev_user");
         if (userStr) {
@@ -85,7 +86,7 @@ export default function SupportPage() {
               email: user.email || ""
             }));
           } catch (parseError) {
-            console.error("Error parsing user:", parseError);
+            logger.error("Error parsing user", parseError);
           }
         }
       }
@@ -133,7 +134,7 @@ export default function SupportPage() {
       setMessageText("")
       alert("Tin nhắn đã được gửi! Admin sẽ phản hồi sớm nhất có thể.")
     } catch (error: any) {
-      console.error('Error sending message:', error)
+      logger.error('Error sending message', error)
       alert("Lỗi gửi tin nhắn: " + (error.message || "Vui lòng thử lại"))
     } finally {
       setIsLoadingChat(false)
@@ -165,7 +166,7 @@ export default function SupportPage() {
         alert("Vui lòng đăng nhập để gửi tin nhắn")
       }
     } catch (error: any) {
-      console.error('Error sending contact form:', error)
+      logger.error('Error sending contact form', error)
       alert("Lỗi gửi tin nhắn: " + (error.message || "Vui lòng thử lại"))
     }
   }

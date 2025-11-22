@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger-client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,7 +112,7 @@ export default function ForgotPasswordPage() {
             body: JSON.stringify({ users: registeredUsers })
           });
         } catch (error) {
-          console.error("Failed to save to API:", error);
+          logger.error("Failed to save to API", error);
         }
         
         // Dispatch event for real-time updates
@@ -121,7 +122,7 @@ export default function ForgotPasswordPage() {
         setTimeout(() => router.push("/dashboard"), 1000);
         return;
       } catch (error: any) {
-        console.error("Lỗi khi cập nhật mật khẩu:", error);
+        logger.error("Lỗi khi cập nhật mật khẩu", error);
         setError(error.message || "Có lỗi xảy ra khi cập nhật mật khẩu. Vui lòng thử lại!");
         return;
       }
@@ -147,7 +148,7 @@ export default function ForgotPasswordPage() {
       setSuccess("Yêu cầu đặt lại mật khẩu đã được gửi! Đang chuyển hướng đến trang đặt lại mật khẩu...");
       setTimeout(() => router.push("/auth/reset-password"), 1000);
     } catch (error: any) {
-      console.error("Lỗi khi xử lý yêu cầu đặt lại mật khẩu:", error);
+      logger.error("Lỗi khi xử lý yêu cầu đặt lại mật khẩu", error);
       setError(error.message || "Có lỗi xảy ra. Vui lòng thử lại!");
     } finally {
       setIsLoading(false);

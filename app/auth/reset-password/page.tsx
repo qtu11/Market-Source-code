@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import { logger } from "@/lib/logger-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,7 @@ function ResetPasswordForm() {
       setTimeout(() => router.push("/auth/login"), 2000);
 
     } catch (err: any) {
-      console.error("Password reset error:", err);
+      logger.error("Password reset error", err);
       setError(err.message || "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);

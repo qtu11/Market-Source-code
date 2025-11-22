@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { logger } from "@/lib/logger-client"
 import { getDeviceInfo, getIPAddress } from "@/lib/auth"
 import { apiPost, apiGet } from "@/lib/api-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -139,7 +140,7 @@ export default function WithdrawPage() {
         new Date(b.requestTime).getTime() - new Date(a.requestTime).getTime()
       ));
     } catch (error) {
-      console.error("Error loading withdrawals:", error);
+      logger.error("Error loading withdrawals", error);
       // Fallback to localStorage nếu API fail
       try {
         const allWithdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
@@ -148,7 +149,7 @@ export default function WithdrawPage() {
           new Date(b.requestTime).getTime() - new Date(a.requestTime).getTime()
         ));
       } catch (localError) {
-        console.error("Error loading from localStorage:", localError);
+        logger.error("Error loading from localStorage", localError);
       }
     }
   }
@@ -230,9 +231,9 @@ export default function WithdrawPage() {
           processed: false
         };
 
-        console.log('✅ Withdrawal saved to PostgreSQL:', result);
+        logger.debug('Withdrawal saved to PostgreSQL', { result });
       } catch (apiError: any) {
-        console.error('❌ API error, saving to localStorage as fallback:', apiError);
+        logger.error('API error, saving to localStorage as fallback', apiError);
         
         // Fallback: Save to localStorage nếu API fail
         withdrawRequest = {

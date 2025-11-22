@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { logger } from "@/lib/logger-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +40,7 @@ export function NotificationCenter() {
         setFilteredNotifications(sorted)
       }
     } catch (error) {
-      console.error('Error loading notifications:', error)
+      logger.error('Error loading notifications', error)
     } finally {
       setIsLoading(false)
     }
@@ -81,7 +82,7 @@ export function NotificationCenter() {
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       )
     } catch (error) {
-      console.error('Error marking notification as read:', error)
+      logger.error('Error marking notification as read', error)
     }
   }, [])
 
@@ -96,7 +97,7 @@ export function NotificationCenter() {
       
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
     } catch (error) {
-      console.error('Error marking all as read:', error)
+      logger.error('Error marking all as read', error)
     }
   }, [notifications])
 
@@ -106,7 +107,7 @@ export function NotificationCenter() {
       await apiDelete(`/api/notifications/${notificationId}`)
       setNotifications(prev => prev.filter(n => n.id !== notificationId))
     } catch (error) {
-      console.error('Error deleting notification:', error)
+      logger.error('Error deleting notification', error)
     }
   }, [])
 

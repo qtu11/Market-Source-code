@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { logger } from "@/lib/logger-client"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import { FloatingHeader } from "@/components/floating-header"
@@ -274,7 +275,7 @@ export default function ProductInfoPage() {
         }
       }
     } catch (error) {
-      console.error('Error loading reviews:', error);
+      logger.error('Error loading reviews', error);
     }
   }, [currentUser])
 
@@ -288,7 +289,7 @@ export default function ProductInfoPage() {
           setCurrentUser(user);
         }
       } catch (error) {
-        console.error("Error loading user:", error);
+        logger.error("Error loading user", error);
         // Fallback to localStorage
         const userStr = localStorage.getItem("currentUser") || localStorage.getItem("qtusdev_user");
         const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
@@ -296,7 +297,7 @@ export default function ProductInfoPage() {
           try {
             setCurrentUser(JSON.parse(userStr));
           } catch (parseError) {
-            console.error("Error parsing user:", parseError);
+            logger.error("Error parsing user", parseError);
           }
         }
       }
@@ -376,11 +377,11 @@ export default function ProductInfoPage() {
                     }
                   } catch (error) {
                     // Ignore API errors, fallback to localStorage
-                    console.warn('Error checking purchases from API:', error);
+                    logger.warn('Error checking purchases from API', { error });
                   }
                 }
             } catch (error) {
-              console.error('Error checking purchase status:', error);
+              logger.error('Error checking purchase status', error);
             }
           };
             
@@ -434,11 +435,11 @@ export default function ProductInfoPage() {
                         }
                       }
                     } catch (error) {
-                      console.warn('Error checking purchases from API:', error);
+                      logger.warn('Error checking purchases from API', { error });
                     }
                   }
                 } catch (error) {
-                  console.error('Error checking purchase status:', error);
+                  logger.error('Error checking purchase status', error);
                 }
               };
               checkPurchaseStatus();
@@ -447,7 +448,7 @@ export default function ProductInfoPage() {
             }
           }
         } catch (error) {
-          console.error('Error loading product:', error);
+          logger.error('Error loading product', error);
           // Fallback to hardcoded array
           const foundProduct = products.find((p) => p.id === prodId);
           if (foundProduct) {
@@ -505,7 +506,7 @@ export default function ProductInfoPage() {
       // Reload reviews
       await loadReviews(product.id);
     } catch (error: any) {
-      console.error('Error submitting review:', error);
+      logger.error('Error submitting review', error);
       alert("Lỗi gửi đánh giá: " + (error.message || "Vui lòng thử lại"));
     } finally {
       setIsSubmittingReview(false);
@@ -583,7 +584,7 @@ export default function ProductInfoPage() {
         throw new Error(result.error || 'Failed to get download URL');
       }
     } catch (error: any) {
-      console.error('Error downloading product:', error);
+      logger.error('Error downloading product', error);
       setIsDownloading(null);
       setDownloadProgress(0);
       

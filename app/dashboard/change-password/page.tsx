@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { logger } from "@/lib/logger-client"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -88,7 +89,7 @@ export default function ChangePasswordPage() {
         }, 1500)
       }
     } catch (error: any) {
-      console.error("Change password error:", error)
+      logger.error("Change password error", error)
       setError(error.message || "Đã xảy ra lỗi khi đổi mật khẩu. Vui lòng thử lại!")
     } finally {
       setLoading(false)
