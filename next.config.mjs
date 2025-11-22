@@ -1,3 +1,6 @@
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -15,11 +18,16 @@ const nextConfig = {
       };
       
       // ✅ FIX: Đảm bảo chỉ có 1 instance của React để tránh lỗi ReactCurrentBatchConfig
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'react': require.resolve('react'),
-        'react-dom': require.resolve('react-dom'),
-      };
+      try {
+        config.resolve.alias = {
+          ...config.resolve.alias,
+          'react': require.resolve('react'),
+          'react-dom': require.resolve('react-dom'),
+        };
+      } catch (error) {
+        // Fallback nếu không resolve được (trong một số môi trường)
+        console.warn('Could not resolve React aliases:', error.message);
+      }
     }
     
     // Cho phép optional dependencies như firebase-admin được resolve ở runtime
