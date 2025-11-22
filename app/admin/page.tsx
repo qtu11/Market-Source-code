@@ -27,6 +27,7 @@ import {
 import { ThreeJSAdmin } from "@/components/three-js-admin"
 import { ThreeDFallback } from "@/components/3d-fallback"
 import { apiGet } from "@/lib/api-client"
+import { logger } from "@/lib/logger-client"
 
 // Import các component riêng biệt
 import { Overview } from "./components/Overview"
@@ -1566,7 +1567,7 @@ Hệ thống thông báo đang hoạt động bình thường.`
   }, [])
 
   const handleAdminReviewReject = useCallback((id: string, reason: string) => {
-    console.log("Reject review", id, reason)
+    logger.debug("Reject review", { id, reason })
     setAdminReviews((prev) => prev.map((review) => (review.id === id ? { ...review, status: "rejected" } : review)))
   }, [])
 
@@ -1575,7 +1576,7 @@ Hệ thống thông báo đang hoạt động bình thường.`
   }, [])
 
   const handleAdminReviewRespond = useCallback((id: string, message: string) => {
-    console.log("Respond review", id, message)
+    logger.debug("Respond review", { id, message })
     alert("Đã lưu phản hồi cho người dùng.")
   }, [])
 

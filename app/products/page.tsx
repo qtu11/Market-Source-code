@@ -12,6 +12,7 @@ import { Footer } from "@/components/footer"
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import { getLocalStorage, setLocalStorage } from "@/lib/localStorage-utils"
+import { logger } from "@/lib/logger-client"
 
 // Lazy load Three.js components để tối ưu performance
 const ThreeDFallback = dynamic(
@@ -20,7 +21,7 @@ const ThreeDFallback = dynamic(
       const mod = await import("@/components/3d-fallback")
       return { default: mod.ThreeDFallback }
     } catch (error) {
-      console.error('Failed to load 3D Fallback component', error)
+      logger.error('Failed to load 3D Fallback component', error)
       throw error
     }
   },
@@ -33,7 +34,7 @@ const ThreeJSProductShowcase = dynamic(
       const mod = await import("@/components/three-js-product-showcase")
       return { default: mod.ThreeJSProductShowcase }
     } catch (error) {
-      console.error('Failed to load ThreeJS Product Showcase component', error)
+      logger.error('Failed to load ThreeJS Product Showcase component', error)
       throw error
     }
   },
@@ -99,7 +100,7 @@ export default function ProductsPage() {
           setCategories(updatedCategories);
         }
       } catch (error) {
-        console.error('Error loading products:', error);
+        logger.error('Error loading products', error);
         // Fallback to localStorage nếu API fail
         const uploadedProducts = getLocalStorage<any[]>("uploadedProducts", []);
         const validatedProducts = uploadedProducts.map((product: any) => ({

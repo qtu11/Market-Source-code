@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sendDepositNotification, sendWithdrawalNotification } from '@/lib/notifications'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -35,7 +36,7 @@ export async function GET() {
       message: "Test notifications sent successfully"
     })
   } catch (error: any) {
-    console.error("Test notification error:", error)
+    logger.error('Test notification error', error, { endpoint: '/api/test-notifications' })
     return NextResponse.json(
       {
         success: false,

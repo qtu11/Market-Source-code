@@ -1,5 +1,7 @@
 "use client"
 
+import { logger } from "@/lib/logger-client"
+
 import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -49,7 +51,7 @@ function RegisterPageContent() {
   // Handle NextAuth session - save to localStorage
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
-      console.log('✅ NextAuth session found (register), saving to localStorage:', session.user);
+      logger.debug('NextAuth session found (register), saving to localStorage', { user: session.user });
       
       // Save OAuth user to localStorage via API + client-side save
       const saveOAuthUser = async () => {
@@ -84,14 +86,14 @@ function RegisterPageContent() {
             const { userManager } = await import('@/lib/userManager');
             await userManager.setUser(data.user);
             
-            console.log('✅ OAuth user saved to localStorage');
+            logger.debug('OAuth user saved to localStorage');
             router.push('/dashboard');
           } else {
-            console.error('❌ Failed to normalize OAuth user');
+            logger.error('Failed to normalize OAuth user');
             setError('Không thể lưu thông tin đăng ký');
           }
         } catch (error) {
-          console.error('❌ Error saving OAuth user:', error);
+          logger.error('Error saving OAuth user', error);
           setError('Lỗi khi lưu thông tin đăng ký');
         }
       };
@@ -126,7 +128,7 @@ function RegisterPageContent() {
     try {
       setIsLoading(true);
       setError("");
-      console.log(`🔐 Attempting ${provider} registration...`);
+      logger.debug(`Attempting ${provider} registration`);
       
       await signIn(provider, { 
         callbackUrl: '/dashboard',
@@ -136,7 +138,7 @@ function RegisterPageContent() {
       // Note: signIn sẽ redirect tự động nếu success
       // Nếu có lỗi, sẽ được handle trong useEffect với searchParams.error
     } catch (error: any) {
-      console.error(`❌ Social registration error (${provider}):`, error);
+      logger.error(`Social registration error (${provider})`, error);
       setError(`Lỗi đăng ký bằng ${provider}. Vui lòng kiểm tra lại cấu hình OAuth.`);
       setIsLoading(false);
     }

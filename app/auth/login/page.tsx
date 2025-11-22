@@ -10,7 +10,8 @@ import { Eye, ArrowLeft, EyeOff, Mail, Lock, Github } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn, useSession } from "next-auth/react"
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeToggle } from "@/components/theme-toggle"
+import { logger } from "@/lib/logger-client"
 
 // Social login icons (placeholder - replace with actual icons)
 const GoogleIcon = () => (
@@ -43,7 +44,7 @@ function LoginPageContent() {
   // Handle NextAuth session - save to localStorage
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
-      console.log('✅ NextAuth session found, saving to localStorage:', session.user);
+      logger.debug('NextAuth session found, saving to localStorage', { user: session.user });
       
       // Save OAuth user to localStorage via API + client-side save
       const saveOAuthUser = async () => {
@@ -78,14 +79,14 @@ function LoginPageContent() {
             const { userManager } = await import('@/lib/userManager');
             await userManager.setUser(data.user);
             
-            console.log('✅ OAuth user saved to localStorage');
+            logger.debug('OAuth user saved to localStorage');
             router.push('/dashboard');
           } else {
-            console.error('❌ Failed to normalize OAuth user');
+            logger.error('Failed to normalize OAuth user');
             setError('Không thể lưu thông tin đăng nhập');
           }
         } catch (error) {
-          console.error('❌ Error saving OAuth user:', error);
+          logger.error('Error saving OAuth user', error);
           setError('Lỗi khi lưu thông tin đăng nhập');
         }
       };
@@ -109,7 +110,7 @@ function LoginPageContent() {
     try {
       setIsLoading(true);
       setError("");
-      console.log(`🔐 Attempting ${provider} login...`);
+      logger.debug(`Attempting ${provider} login`);
       
       await signIn(provider, { 
         callbackUrl: '/dashboard',
@@ -119,7 +120,7 @@ function LoginPageContent() {
       // Note: signIn sẽ redirect tự động nếu success
       // Nếu có lỗi, sẽ được handle trong useEffect với searchParams.error
     } catch (error: any) {
-      console.error(`❌ Social login error (${provider}):`, error);
+      logger.error(`Social login error (${provider})`, error);
       setError(`Lỗi đăng nhập bằng ${provider}. Vui lòng kiểm tra lại cấu hình OAuth.`);
       setIsLoading(false);
     }

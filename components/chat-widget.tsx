@@ -33,13 +33,13 @@ export function ChatWidget() {
     if (typeof window === 'undefined') return
     
     try {
-      const userStr = localStorage.getItem("currentUser") || localStorage.getItem("qtusdev_user")
-      if (userStr) {
+    const userStr = localStorage.getItem("currentUser") || localStorage.getItem("qtusdev_user")
+    if (userStr) {
         const user = JSON.parse(userStr)
         setCurrentUser(user)
       }
-    } catch (error) {
-      console.error("Error parsing user:", error)
+      } catch (error) {
+        console.error("Error parsing user:", error)
     }
   }, [])
 
@@ -74,17 +74,17 @@ export function ChatWidget() {
 
       // Count unread messages (messages from admin that user hasn't seen)
       if (typeof window !== 'undefined') {
-        const lastSeenMessageId = parseInt(localStorage.getItem('lastSeenMessageId') || '0')
-        const unread = sortedMessages.filter(
-          (m) => m.isAdmin && m.id > lastSeenMessageId
-        ).length
-        setUnreadCount(unread)
+      const lastSeenMessageId = parseInt(localStorage.getItem('lastSeenMessageId') || '0')
+      const unread = sortedMessages.filter(
+        (m) => m.isAdmin && m.id > lastSeenMessageId
+      ).length
+      setUnreadCount(unread)
 
-        // Update last seen message ID (only if chat is open)
-        if (isOpen && sortedMessages.length > 0) {
-          const lastMessageId = sortedMessages[sortedMessages.length - 1].id
-          localStorage.setItem('lastSeenMessageId', lastMessageId.toString())
-        }
+      // Update last seen message ID (only if chat is open)
+      if (isOpen && sortedMessages.length > 0) {
+        const lastMessageId = sortedMessages[sortedMessages.length - 1].id
+        localStorage.setItem('lastSeenMessageId', lastMessageId.toString())
+      }
       }
       
       setMessages(sortedMessages)

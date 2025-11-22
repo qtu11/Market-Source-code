@@ -1,5 +1,7 @@
 "use client"
 
+import { logger } from "@/lib/logger-client"
+
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,7 +43,7 @@ function CheckoutContent() {
           return
         }
       } catch (error) {
-        console.error('Error loading user:', error);
+        logger.error('Error loading user', error);
         // Fallback to localStorage
         const currentUserFromStorage =
           getLocalStorage<any>("currentUser", null) || getLocalStorage<any>("qtusdev_user", null)
@@ -143,7 +145,7 @@ function CheckoutContent() {
           purchaseResults.push(result);
         }
       } catch (purchaseError: any) {
-        console.error('Failed to create purchase records in database:', purchaseError);
+        logger.error('Failed to create purchase records in database', purchaseError);
         setError(purchaseError.message || 'Không thể tạo đơn hàng. Vui lòng thử lại!');
         setIsProcessing(false);
         return; // ✅ FIX: Stop here nếu purchase fail, không trừ tiền
@@ -172,7 +174,7 @@ function CheckoutContent() {
       setSuccess(true)
 
     } catch (error) {
-      console.error("Purchase error:", error)
+      logger.error("Purchase error", error)
       setError("Có lỗi xảy ra khi xử lý đơn hàng. Vui lòng thử lại!")
     } finally {
       setIsProcessing(false)

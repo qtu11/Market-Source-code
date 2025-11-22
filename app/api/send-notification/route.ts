@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { saveNotification } from '@/lib/admin-helpers'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: Request) {
   try {
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
           body: JSON.stringify({ message })
         })
       } catch (telegramError) {
-        console.error('Telegram notification error:', telegramError)
+        logger.error('Telegram notification error', telegramError, { endpoint: '/api/send-notification' })
       }
     }
 
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
       message: 'Thông báo đã được gửi!'
     })
   } catch (error: any) {
-    console.error('Send notification error:', error)
+    logger.error('Send notification error', error, { endpoint: '/api/send-notification' })
     return NextResponse.json(
       { error: error.message || 'Lỗi khi gửi thông báo!' },
       { status: 500 }

@@ -12,6 +12,7 @@ import { Footer } from "@/components/footer"
 import { Logo } from "@/components/logo"
 import { getDeviceInfo, getIPAddress } from "@/lib/auth"
 import { getLocalStorage, setLocalStorage, removeLocalStorage } from "@/lib/localStorage-utils"
+import { logger } from "@/lib/logger-client"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -38,7 +39,7 @@ export default function CartPage() {
       const items = getLocalStorage<any[]>('cartItems', [])
       setCartItems(items)
     } catch (error) {
-      console.error('Error loading cart items:', error)
+      logger.error('Error loading cart items', error)
       setCartItems([])
     }
   }
@@ -63,7 +64,7 @@ export default function CartPage() {
         setCurrentUser(currentUserFromStorage)
       }
     } catch (error) {
-      console.error('Error loading current user:', error)
+      logger.error('Error loading current user', error)
     }
   }
 
@@ -157,7 +158,7 @@ export default function CartPage() {
           purchaseResults.push(result);
         }
       } catch (purchaseError: any) {
-        console.error('Failed to create purchase records in database:', purchaseError);
+        logger.error('Failed to create purchase records in database', purchaseError);
         alert(purchaseError.message || 'Không thể tạo đơn hàng. Vui lòng thử lại!');
         setIsLoading(false);
         return; // ✅ FIX: Stop here nếu purchase fail, không trừ tiền
@@ -226,7 +227,7 @@ export default function CartPage() {
       router.push("/dashboard")
 
     } catch (error) {
-      console.error("Checkout error:", error)
+      logger.error("Checkout error", error)
       alert("Có lỗi xảy ra khi thanh toán. Vui lòng thử lại!")
     } finally {
       setIsLoading(false)

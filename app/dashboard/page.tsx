@@ -146,7 +146,7 @@ export default function DashboardPage() {
         setProfileLoaded(true)
       }
     } catch (error) {
-      console.warn("Không thể tải hồ sơ người dùng", error)
+      logger.warn("Không thể tải hồ sơ người dùng", { error })
       setProfileForm((prev) => ({
         ...prev,
         name: currentUser.name || prev.name || currentUser.email || "",
@@ -483,7 +483,7 @@ export default function DashboardPage() {
         setDownloadRecords(mapped)
         setLocalStorage("downloadHistory", mapped)
       } catch (error) {
-        console.warn("Download history fallback", error)
+        logger.warn("Download history fallback", { error })
         try {
           const stored = getLocalStorage<DownloadRecord[]>("downloadHistory", [])
           setDownloadRecords(stored)
@@ -517,7 +517,7 @@ export default function DashboardPage() {
       setUserReviews(mapped)
       setLocalStorage("userReviews", mapped)
     } catch (error) {
-      console.warn("Review load fallback", error)
+      logger.warn("Review load fallback", { error })
       try {
         const stored = getLocalStorage<ProductReview[]>("userReviews", [])
         setUserReviews(stored)
