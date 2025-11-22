@@ -94,6 +94,8 @@ const nextConfig = {
   generateBuildId: async () => {
     return 'build-' + Date.now();
   },
+  // Disable static optimization for all pages (use dynamic rendering)
+  output: 'standalone',
 }
 
 export default nextConfig;
