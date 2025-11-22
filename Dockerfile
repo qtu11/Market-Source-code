@@ -1,5 +1,5 @@
-# Sử dụng image Node.js 22.18.0
-FROM node:22.18.0-alpine
+# ✅ FIX: Sử dụng Node.js 22 LTS (đồng bộ với netlify.toml)
+FROM node:22-alpine
 
 # Thiết lập thư mục làm việc
 WORKDIR /app
@@ -8,6 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Cài đặt dependencies
+# ✅ FIX: Set DOCKER_BUILD để kích hoạt standalone output
+ENV DOCKER_BUILD=true
 RUN npm install
 
 # Sao chép mã nguồn

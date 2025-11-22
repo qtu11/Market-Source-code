@@ -5,6 +5,7 @@ import "@/app/globals.css"
 import { Providers } from "@/components/providers"
 import { ChatWidget } from "@/components/chat-widget"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
+import { ServiceWorkerRegister } from "@/components/service-worker-register"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -64,7 +65,7 @@ export const metadata: Metadata = {
     google: "your-google-verification-code",
   },
   category: "technology",
-    generator: 'v0.app'
+  generator: 'Next.js',
 }
 
 export default function RootLayout({
@@ -91,6 +92,8 @@ export default function RootLayout({
           {children}
           {/* ✅ Chat Widget - Hiển thị ở tất cả các trang */}
           <ChatWidget />
+          {/* ✅ Service Worker Registration */}
+          <ServiceWorkerRegister />
         </Providers>
         </ErrorBoundary>
       </body>

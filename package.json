@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build --webpack",
+    "build": "next build",
     "verify:data": "node scripts/verify-supabase-data.js",
     "seed:data": "node scripts/seed-supabase-data.js",
     "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
     "lint": "next lint",
     "start": "next start",
     "migrate": "node scripts/run-migration.js",
@@ -26,7 +27,9 @@
     "db:create-admin": "node scripts/create-admin-user.js",
     "db:start": "powershell -ExecutionPolicy Bypass -File scripts/start-postgresql.ps1",
     "db:check-conn": "powershell -ExecutionPolicy Bypass -File scripts/check-postgres-connection.ps1",
-    "db:migrate-fix": "powershell -ExecutionPolicy Bypass -File scripts/run-migration.ps1"
+    "db:migrate-fix": "powershell -ExecutionPolicy Bypass -File scripts/run-migration.ps1",
+    "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/clean-dev.ps1",
+    "dev:restart": "powershell -ExecutionPolicy Bypass -File scripts/clean-dev.ps1 && npm run dev"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.678.0",
@@ -110,7 +113,6 @@
     "sonner": "^1.7.1",
     "speakeasy": "^2.0.0",
     "swiper": "^12.0.3",
-    "tailwind": "^4.0.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.180.0",

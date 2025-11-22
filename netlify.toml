@@ -1,9 +1,11 @@
 [build]
   command = "rm -f pnpm-lock.yaml && npm ci --legacy-peer-deps && npm run build"
-  publish = ".next"
+  # ✅ FIX: Bỏ publish directive - Netlify Next.js plugin tự động xử lý output
+  # publish = ".next"  # Không cần vì plugin tự xử lý
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
+  # ✅ FIX: Đồng bộ với Dockerfile (Node 22.18.0)
   # Force npm instead of pnpm
   NPM_FLAGS = "--legacy-peer-deps"
   # Disable pnpm auto-detection completely

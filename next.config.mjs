@@ -54,55 +54,44 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-    unoptimized: true,
+    // ✅ FIX: Chỉ unoptimized khi deploy static (Netlify static)
+    // Với Vercel/Docker, để false để tận dụng Next.js Image Optimization
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',
   },
-  env: {
-    // Only server-side environment variables
-    TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
-    TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
-    FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,
-    FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN,
-    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
-    FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET,
-    FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
-    FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID,
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-    NEXT_PUBLIC_GOOGLE_CLIENT_SECRET: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET,
-    NEXT_PUBLIC_GITHUB_CLIENT_ID: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID,
-    NEXT_PUBLIC_FACEBOOK_CLIENT_ID: process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID,
-    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
-    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
-    FACEBOOK_CLIENT_ID: process.env.FACEBOOK_CLIENT_ID,
-    FACEBOOK_CLIENT_SECRET: process.env.FACEBOOK_CLIENT_SECRET,
-    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
-    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
-    ADMIN_NAME: process.env.ADMIN_NAME,
-    ADMIN_ROLE: process.env.ADMIN_ROLE,
-    ADMIN_STATUS: process.env.ADMIN_STATUS,
-    ADMIN_CREATED_AT: process.env.ADMIN_CREATED_AT,
-    ADMIN_UPDATED_AT: process.env.ADMIN_UPDATED_AT,
-    ADMIN_LAST_LOGIN: process.env.ADMIN_LAST_LOGIN,
-    ADMIN_LAST_IP: process.env.ADMIN_LAST_IP,
-  },
+  // ✅ FIX: Next.js tự động expose NEXT_PUBLIC_* variables
+  // Chỉ cần config server-side only variables nếu thực sự cần
+  // (Thường không cần vì có thể access trực tiếp từ process.env)
+  // env: {
+  //   // Chỉ thêm nếu cần expose server-side vars cho client (không nên)
+  // },
   experimental: {
     optimizePackageImports: ['lucide-react'],
+  },
+  // ✅ FIX: Thêm turbopack config để tương thích với Next.js 16
+  // Turbopack config tương đương với webpack config
+  turbopack: {
+    resolveAlias: {
+      // Turbopack tự động xử lý fallbacks, không cần config như webpack
+    },
+  },
+  // ✅ FIX: Redirects để xử lý các requests không tồn tại
+  async rewrites() {
+    return [
+      // Redirect icon-192.png to logoqtusdev.png
+      {
+        source: '/icon-192.png',
+        destination: '/logoqtusdev.png',
+      },
+    ]
   },
   // Skip static generation for admin routes
   generateBuildId: async () => {
     return 'build-' + Date.now();
   },
   // Disable static optimization for all pages (use dynamic rendering)
-  output: 'standalone',
+  // ✅ FIX: Conditional output - standalone cho Docker, undefined cho Netlify
+  // Netlify plugin tự động xử lý Next.js output, không cần standalone
+  output: process.env.DOCKER_BUILD === 'true' ? 'standalone' : undefined,
 }
 
 export default nextConfig;

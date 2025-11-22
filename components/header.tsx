@@ -134,8 +134,8 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 glass-card animate-fade-in-down">
+      <div className="container flex h-16 items-center justify-between smooth-transition">
         <div className="flex items-center space-x-4">
           <Logo />
           
@@ -145,13 +145,16 @@ export function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
+                className={`text-sm font-medium transition-all duration-300 hover:text-primary relative group ${
                   isActive(item.href)
                     ? 'text-primary'
                     : 'text-muted-foreground'
                 }`}
               >
                 {item.name}
+                <span className={`absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-300 group-hover:w-full ${
+                  isActive(item.href) ? 'w-full' : ''
+                }`} />
               </Link>
             ))}
           </nav>
@@ -162,12 +165,12 @@ export function Header() {
           
           {/* Cart */}
           <Link href="/cart">
-            <Button variant="ghost" size="sm" className="relative">
-              <ShoppingCart className="h-5 w-5" />
+            <Button variant="ghost" size="sm" className="relative hover-lift smooth-transition">
+              <ShoppingCart className="h-5 w-5 group-hover:animate-bounce" />
               {cartCount > 0 && (
                 <Badge 
                   variant="destructive" 
-                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs animate-bounce-in hover-glow"
                 >
                   {cartCount}
                 </Badge>
@@ -179,9 +182,9 @@ export function Header() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-purple-600 text-white">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover-lift smooth-transition">
+                  <Avatar className="h-8 w-8 hover-glow">
+                    <AvatarFallback className="bg-gradient-to-r from-purple-600 to-pink-600 text-white animate-gradient">
                       {user.name ? user.name.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -229,10 +232,10 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <div className="flex items-center space-x-2">
-              <Button asChild variant="ghost" size="sm">
+              <Button asChild variant="ghost" size="sm" className="hover-lift smooth-transition">
                 <Link href="/auth/login">Đăng nhập</Link>
               </Button>
-              <Button asChild size="sm" className="bg-purple-600 hover:bg-purple-700">
+              <Button asChild size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 hover-lift hover-glow animate-gradient">
                 <Link href="/auth/register">Đăng ký</Link>
               </Button>
             </div>

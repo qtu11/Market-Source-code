@@ -13,21 +13,19 @@ export default function HomePage() {
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
       <FloatingHeader />
       <main className="pt-20 md:pt-24">
-        <div className="animate-fadeIn">
+        <div className="animate-fade-in-up">
           <HeroSection />
         </div>
-        <div className="animate-fadeInUp delay-100">
+        <div className="animate-fade-in-up delay-100">
           <StatsSection />
         </div>
-        <div className="animate-fadeInUp delay-200">
+        <div className="animate-fade-in-up delay-200">
           <FeaturesSection />
         </div>
-        <div className="animate-fadeInUp">
-          <div className="animate-fadeInUp delay-300">
+        <div className="animate-fade-in-up delay-300">
             <ProductsSection />
-          </div>
         </div>
-        <div className="animate-fadeInUp delay-100">
+        <div className="animate-fade-in-up delay-400">
           <TestimonialsSection />
         </div>
       </main>

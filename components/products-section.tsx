@@ -202,16 +202,17 @@ export function ProductsSection() {
             return (
             <Card
               key={product.id}
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-500/50 transition-all duration-300 group overflow-hidden"
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-500/50 transition-all duration-300 group overflow-hidden card-hover glass-card"
             >
-              <div className="relative">
+              <div className="relative overflow-hidden">
                 <Image
                     src={imageSrc}
                   alt={product.title}
                   width={400}
                   height={225}
-                  className="w-full card-img-responsive object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full card-img-responsive object-cover group-hover:scale-110 transition-transform duration-500"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 {product.featured && (
                   <Badge className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs">
                     Nổi bật
@@ -266,9 +267,9 @@ export function ProductsSection() {
                 <div className="flex space-x-2">
                   <Button
                     onClick={() => handleAddToCart(product)}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs sm:text-sm py-2"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-xs sm:text-sm py-2 hover-lift hover-glow animate-gradient"
                   >
-                    <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 group-hover:animate-bounce" />
                     <span className="hidden sm:inline">Mua ngay</span>
                     <span className="sm:hidden">Mua</span>
                   </Button>
@@ -276,7 +277,7 @@ export function ProductsSection() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 bg-transparent px-2 sm:px-3"
+                      className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 bg-transparent px-2 sm:px-3 hover-lift"
                         onClick={() => window.open(demoLink, "_blank")}
                     >
                       <Eye className="w-3 h-3 sm:w-4 sm:h-4" />

@@ -13,6 +13,7 @@ import dynamic from "next/dynamic"
 import Image from "next/image"
 import { getLocalStorage, setLocalStorage } from "@/lib/localStorage-utils"
 import { logger } from "@/lib/logger-client"
+import { ProductSkeletonGrid } from "@/components/product-skeleton"
 
 // Lazy load Three.js components để tối ưu performance
 const ThreeDFallback = dynamic(
@@ -59,12 +60,14 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState("price-low")
   const [priceRange, setPriceRange] = useState("all")
   const [products, setProducts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   const [categories, setCategories] = useState(BASE_CATEGORIES)
 
   useEffect(() => {
     // ✅ FIX: Load products từ API thay vì localStorage
     const loadProducts = async () => {
+      setIsLoading(true);
       try {
         const { apiGet } = await import('@/lib/api-client');
         const { mapBackendProductsToFrontend } = await import('@/lib/product-mapper');
@@ -124,6 +127,8 @@ export default function ProductsPage() {
           originalPrice: product.originalPrice || product.price || 0,
         }));
         setProducts(validatedProducts);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -342,20 +347,25 @@ export default function ProductsPage() {
         </div>
 
         {/* Products Grid */}
+        {isLoading ? (
+          <ProductSkeletonGrid count={6} />
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {sortedProducts.map((product) => (
+            {sortedProducts.map((product, index) => (
               <Card
               key={product.id}
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-500/50 transition-all duration-300 group overflow-hidden"
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-500/50 transition-all duration-300 group overflow-hidden card-hover glass-card animate-fade-in-up"
+              style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="relative">
+                <div className="relative overflow-hidden">
                   <Image
                     src={product.image || "/placeholder.svg"}
                     alt={product.title}
                     width={400}
                     height={192}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 {product.featured && (
                   <Badge className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
                     Nổi bật
@@ -423,16 +433,16 @@ export default function ProductsPage() {
                 <div className="flex space-x-2">
                   <Button
                     onClick={() => handleAddToCart(product)}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white hover-lift hover-glow animate-gradient"
                   >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    <ShoppingCart className="w-4 h-4 mr-2 group-hover:animate-bounce" />
                     Mua ngay
                   </Button>
                   {product.demoLink && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 bg-transparent"
+                      className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 bg-transparent hover-lift"
                       onClick={() => window.open(product.demoLink, "_blank")}
                     >
                       <Eye className="w-4 h-4" />
@@ -443,6 +453,7 @@ export default function ProductsPage() {
             </Card>
           ))}
         </div>
+        )}
 
         {/* No Results */}
         {sortedProducts.length === 0 && (
