@@ -99,9 +99,21 @@ export default function ProductsPage() {
           });
           setCategories(updatedCategories);
         }
-      } catch (error) {
+      } catch (error: any) {
         logger.error('Error loading products', error);
-        // Fallback to localStorage nếu API fail
+        
+        // ✅ FIX: Hiển thị thông báo lỗi rõ ràng nếu là database connection error
+        if (error?.message?.includes('Database connection failed') || 
+            error?.error?.includes('Database connection failed') ||
+            error?.code === 'DB_CONNECTION_FAILED') {
+          // Set empty products và hiển thị error message
+          setProducts([]);
+          // Log để user biết
+          console.error('⚠️ Database connection failed. Please check Netlify environment variables.');
+          return;
+        }
+        
+        // Fallback to localStorage nếu API fail vì lý do khác
         const uploadedProducts = getLocalStorage<any[]>("uploadedProducts", []);
         const validatedProducts = uploadedProducts.map((product: any) => ({
           ...product,
@@ -442,6 +454,14 @@ export default function ProductsPage() {
                 ? "Chưa có sản phẩm nào được upload. Admin vui lòng upload sản phẩm mới."
                 : "Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc để tìm thấy mã nguồn phù hợp"}
             </p>
+            {/* ✅ FIX: Hiển thị thông báo nếu database connection fail */}
+            {products.length === 0 && (
+              <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  ⚠️ Nếu bạn là admin, vui lòng kiểm tra database connection trên Netlify.
+                </p>
+              </div>
+            )}
             {products.length > 0 && (
               <Button
                 onClick={() => {

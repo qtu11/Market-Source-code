@@ -122,7 +122,7 @@ function createPool(): Pool {
 
 let poolInstance: Pool | null = null;
 
-function getPoolInstance(): Pool {
+function getPoolInstance(): Pool | null {
   if (!poolInstance) {
     try {
       poolInstance = createPool();
@@ -144,14 +144,18 @@ function getPoolInstance(): Pool {
           }
         });
       }
-    } catch (error) {
-      // Nếu createPool() throw error, log và rethrow
-      logger.error('Failed to create database pool', error);
+    } catch (error: unknown) {
+      // ✅ FIX: Trong serverless, không throw error mà return null để handle gracefully
+      if (isServerless) {
+        logger.warn('Database pool creation failed in serverless environment', error as Error);
+        return null;
+      }
+      // Nếu không phải serverless, throw error như bình thường
+      logger.error('Failed to create database pool', error as Error);
       throw error;
     }
   }
-  // TypeScript assertion: poolInstance không thể null ở đây vì đã được tạo hoặc throw error
-  return poolInstance!;
+  return poolInstance;
 }
 
 // Helper function để retry query với exponential backoff
@@ -191,8 +195,12 @@ export async function queryWithRetry<T = any>(
 
 export const pool = new Proxy({} as Pool, {
   get(_target, prop, _receiver) {
-    const instance = getPoolInstance() as any;
-    const value = instance[prop];
+    const instance = getPoolInstance();
+    if (!instance) {
+      // ✅ FIX: Nếu pool instance là null (database connection fail), throw error với message rõ ràng
+      throw new Error('Database connection failed. Please check environment variables. Pool instance is null.');
+    }
+    const value = (instance as any)[prop];
     if (typeof value === 'function') {
       return value.bind(instance);
     }
@@ -200,8 +208,12 @@ export const pool = new Proxy({} as Pool, {
   },
 }) as Pool;
 
-export function getPool() {
-  return getPoolInstance();
+export function getPool(): Pool {
+  const instance = getPoolInstance();
+  if (!instance) {
+    throw new Error('Database connection failed. Please check environment variables.');
+  }
+  return instance;
 }
 
 // ============================================================
@@ -1303,9 +1315,20 @@ export async function getProducts(filters?: {
 
     const result = await pool.query(query, params);
     return result.rows;
-  } catch (error) {
+  } catch (error: any) {
     const { logger } = await import('@/lib/logger');
     logger.error('Error getting products', error);
+    
+    // ✅ FIX: Nếu là database connection error, throw với message rõ ràng
+    if (error?.message?.includes('Pool instance is null') || 
+        error?.message?.includes('Database connection failed') ||
+        error?.code === 'ENOTFOUND' ||
+        error?.code === 'ECONNREFUSED') {
+      const dbError = new Error('Database connection failed. Please check environment variables.');
+      (dbError as any).code = error?.code || 'DB_CONNECTION_FAILED';
+      throw dbError;
+    }
+    
     throw error;
   }
 }
