@@ -29,15 +29,17 @@ export function ChatWidget() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
  
   useEffect(() => {
-    // Load current user
-    const userStr = localStorage.getItem("currentUser") || localStorage.getItem("qtusdev_user")
-    if (userStr) {
-      try {
+    // Load current user - only on client side
+    if (typeof window === 'undefined') return
+    
+    try {
+      const userStr = localStorage.getItem("currentUser") || localStorage.getItem("qtusdev_user")
+      if (userStr) {
         const user = JSON.parse(userStr)
         setCurrentUser(user)
-      } catch (error) {
-        console.error("Error parsing user:", error)
       }
+    } catch (error) {
+      console.error("Error parsing user:", error)
     }
   }, [])
 
