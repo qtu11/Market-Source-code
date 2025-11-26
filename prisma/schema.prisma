@@ -1,0 +1,239 @@
+// Prisma Schema for QtusDevMarket
+// Note: This is optional - the project uses raw SQL queries with pg library
+// If you want to use Prisma ORM, uncomment and configure this schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// CORE MODELS
+// ============================================================
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  username     String?   @unique
+  name         String?
+  passwordHash String?   @map("password_hash")
+  avatarUrl    String?   @map("avatar_url")
+  ipAddress    String?   @map("ip_address")
+  role         String    @default("user") // 'user' | 'admin'
+  balance      Decimal   @default(0) @db.Decimal(15, 2)
+  status       String    @default("active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  // Relations
+  deposits     Deposit[]
+  withdrawals  Withdrawal[]
+  purchases    Purchase[]
+  reviews      Review[]
+  chats        Chat[]    @relation("UserChats")
+  adminChats   Chat[]    @relation("AdminChats")
+  wishlists    Wishlist[]
+  notifications Notification[]
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model Product {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?   @db.Text
+  price       Decimal   @db.Decimal(10, 2)
+  category    String?
+  demoUrl     String?   @map("demo_url")
+  downloadUrl String?   @map("download_url")
+  fileUrl     String?   @map("file_url")
+  thumbnail   String?
+  imageUrl    String?   @map("image_url")
+  tags        String[]
+  isActive    Boolean   @default(true) @map("is_active")
+  userId      Int?      @map("user_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  // Relations
+  purchases   Purchase[]
+  reviews     Review[]
+  wishlists   Wishlist[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([userId])
+  @@map("products")
+}
+
+model Deposit {
+  id            Int       @id @default(autoincrement())
+  userId        Int       @map("user_id")
+  userEmail     String?   @map("user_email")
+  userName      String?   @map("user_name")
+  amount        Decimal   @db.Decimal(15, 2)
+  method        String?
+  transactionId String?   @map("transaction_id")
+  status        String    @default("pending") // 'pending' | 'approved' | 'rejected'
+  createdAt     DateTime  @default(now()) @map("timestamp")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+  approvedTime  DateTime? @map("approved_time")
+  approvedBy    String?   @map("approved_by")
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt], map: "idx_deposits_timestamp")
+  @@map("deposits")
+}
+
+model Withdrawal {
+  id            Int       @id @default(autoincrement())
+  userId        Int       @map("user_id")
+  userEmail     String?   @map("user_email")
+  userName      String?   @map("user_name")
+  amount        Decimal   @db.Decimal(15, 2)
+  bankName      String?   @map("bank_name")
+  accountNumber String?   @map("account_number")
+  accountName   String?   @map("account_name")
+  status        String    @default("pending") // 'pending' | 'approved' | 'rejected'
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+  approvedTime  DateTime? @map("approved_time")
+  approvedBy    String?   @map("approved_by")
+
+  // Relations
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("withdrawals")
+}
+
+model Purchase {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  productId Int      @map("product_id")
+  amount    Decimal  @db.Decimal(15, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productId])
+  @@index([createdAt])
+  @@map("purchases")
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  productId Int      @map("product_id")
+  rating    Int      // 1-5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+model Chat {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  adminId   Int?     @map("admin_id")
+  message   String   @db.Text
+  isAdmin   Boolean  @default(false) @map("is_admin")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  user      User     @relation("UserChats", fields: [userId], references: [id], onDelete: Cascade)
+  admin     User?    @relation("AdminChats", fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([adminId])
+  @@index([isAdmin])
+  @@index([createdAt])
+  @@map("chats")
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  productId Int      @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@map("wishlists")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String
+  title     String?
+  message   String   @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  role      String   // 'superadmin' | 'admin'
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([userId])
+  @@index([role])
+  @@map("admin")
+}
+

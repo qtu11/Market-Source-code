@@ -1,0 +1,58 @@
+import { pool } from '@/lib/database';
+import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+
+export const runtime = 'nodejs'
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+/**
+ * Health check endpoint cho database
+ * GET /api/health/database
+ * 
+ * Dùng cho monitoring và load balancer health checks
+ */
+export async function GET() {
+  try {
+    const startTime = Date.now();
+    
+    // Test connection với timeout
+    const result = await pool.query('SELECT NOW() as timestamp, version() as version');
+    
+    const responseTime = Date.now() - startTime;
+    
+    // Kiểm tra thêm số lượng bảng
+    const tableCount = await pool.query(
+      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'public'"
+    );
+    
+    return NextResponse.json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: result.rows[0].timestamp,
+      version: result.rows[0].version.split(' ')[0] + ' ' + result.rows[0].version.split(' ')[1],
+      tableCount: parseInt(tableCount.rows[0].count),
+      responseTime: `${responseTime}ms`,
+    }, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
+  } catch (error: any) {
+    logger.error('Database health check failed', error);
+    
+    return NextResponse.json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    }, {
+      status: 503, // Service Unavailable
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
+  }
+}

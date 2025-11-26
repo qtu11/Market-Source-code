@@ -1,0 +1,13 @@
+name = "qtusdev-market"
+main = ".open-next/worker/index.ts"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat"]
+node_compat = true
+pages_build_output_dir = ".open-next"
+
+[vars]
+NODE_VERSION = "20.14.0"
+
+[observability]
+enabled = true
+
