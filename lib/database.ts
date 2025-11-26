@@ -77,10 +77,13 @@ function createPool(): Pool | null {
       const pool = new Pool({
         connectionString: databaseUrl,
         ...poolConfig,
-        // ✅ FIX: Thêm SSL mode cho Supabase
-        ssl: isNetlify ? {
-          rejectUnauthorized: false
-        } : undefined,
+        // ✅ SSL: bật SSL mặc định (phù hợp Supabase / managed Postgres yêu cầu SSL)
+        // Có thể tắt bằng cách đặt DB_SSL=disable trong env nếu dùng Postgres local không SSL
+        ssl: process.env.DB_SSL === 'disable'
+          ? undefined
+          : {
+              rejectUnauthorized: false,
+            },
       });
 
       if (shouldSkipDbTest) {
@@ -137,6 +140,12 @@ function createPool(): Pool | null {
     password: process.env.DB_PASSWORD, // Bắt buộc, không có fallback
     port: dbPort,
     ...poolConfig,
+    // ✅ SSL fallback: tương tự nhánh DATABASE_URL
+    ssl: process.env.DB_SSL === 'disable'
+      ? undefined
+      : {
+          rejectUnauthorized: false,
+        },
   };
 
   logger.info('Using PostgreSQL connection (fallback)', {

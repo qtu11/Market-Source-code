@@ -11,6 +11,12 @@ export const fetchCache = "force-no-store";
 export async function GET() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
+    // Đồng bộ cấu hình SSL với lib/database.ts
+    ssl: process.env.DB_SSL === 'disable'
+      ? undefined
+      : {
+          rejectUnauthorized: false,
+        },
   });
 
   try {
