@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "cf:build": "npx @opennextjs/cloudflare@latest build",
+    "cf:build": "npx @opennextjs/cloudflare build",
     "cf:deploy": "npm run cf:build && npx wrangler pages deploy .open-next --project-name qtusdev-market",
     "verify:data": "node scripts/verify-supabase-data.js",
     "seed:data": "node scripts/seed-supabase-data.js",
@@ -122,6 +122,7 @@
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.13.5",
+    "@opennextjs/cloudflare": "^1.13.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22",
     "@types/pg": "^8.15.6",
