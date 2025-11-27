@@ -81,17 +81,18 @@ if (content.includes(originalAlias)) {
                     });
                     // Fix jose module từ jwks-rsa - resolve về jose ở root node_modules
                     build.onResolve({ filter: /^jose$/ }, (args) => {
-                        try {
-                            // Tìm jose trong root node_modules thay vì nested one
-                            const josePath = require.resolve('jose', { 
-                                paths: [buildOpts.appPath, path.join(buildOpts.appPath, 'node_modules')] 
-                            });
-                            // Return path để esbuild bundle nó
-                            return { path: josePath };
-                        } catch (e) {
-                            // Nếu không tìm thấy, để esbuild tự resolve
-                            return undefined;
+                        // Tìm jose trong root node_modules thay vì nested one từ jwks-rsa
+                        const rootJosePath = path.join(buildOpts.appPath, 'node_modules', 'jose');
+                        const fs = require('fs');
+                        if (fs.existsSync(rootJosePath)) {
+                            // Resolve về jose ở root node_modules
+                            return { 
+                                path: rootJosePath,
+                                namespace: 'file'
+                            };
                         }
+                        // Nếu không tìm thấy, để esbuild tự resolve
+                        return undefined;
                     });
                 },
             },`;
