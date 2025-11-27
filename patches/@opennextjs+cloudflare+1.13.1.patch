@@ -1,8 +1,8 @@
 diff --git a/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js b/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
-index 95a1a0a..fd4daeb 100644
+index 95a1a0a..1d0eadd 100644
 --- a/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
 +++ b/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
-@@ -81,6 +81,42 @@ export async function bundleServer(buildOpts, projectOpts) {
+@@ -81,6 +81,48 @@ export async function bundleServer(buildOpts, projectOpts) {
              shimRequireHook(buildOpts),
              inlineDynamicRequires(updater, buildOpts),
              setWranglerExternal(),
@@ -25,14 +25,20 @@ index 95a1a0a..fd4daeb 100644
 +                        // Tìm jose trong root node_modules thay vì nested one từ jwks-rsa
 +                        // fs và path đã được import ở top level của file
 +                        const rootJoseDir = path.join(buildOpts.appPath, 'node_modules', 'jose');
++                        const josePackageJson = path.join(rootJoseDir, 'package.json');
 +                        try {
 +                            // Kiểm tra xem jose có tồn tại trong root node_modules không
-+                            if (fs.existsSync(rootJoseDir)) {
-+                                // Resolve về directory của jose, esbuild sẽ tự resolve entry point
-+                                return { 
-+                                    path: rootJoseDir,
-+                                    resolveDir: rootJoseDir
-+                                };
++                            if (fs.existsSync(josePackageJson)) {
++                                // Đọc package.json để tìm entry point
++                                const pkg = JSON.parse(fs.readFileSync(josePackageJson, 'utf8'));
++                                const entryPoint = pkg.exports?.['.']?.require || pkg.exports?.['.']?.default || pkg.main || 'index.js';
++                                const joseEntryPath = path.join(rootJoseDir, entryPoint);
++                                // Resolve về file entry point cụ thể
++                                if (fs.existsSync(joseEntryPath) || entryPoint === 'index.js') {
++                                    return { 
++                                        path: joseEntryPath
++                                    };
++                                }
 +                            }
 +                        } catch (e) {
 +                            // Nếu có lỗi, để esbuild tự resolve
@@ -45,7 +51,7 @@ index 95a1a0a..fd4daeb 100644
              fixRequire(updater),
              handleOptionalDependencies(optionalDependencies),
              patchInstrumentation(updater, buildOpts),
-@@ -96,17 +132,9 @@ export async function bundleServer(buildOpts, projectOpts) {
+@@ -96,17 +138,9 @@ export async function bundleServer(buildOpts, projectOpts) {
              updater.plugin,
          ],
          external: ["./middleware/handler.mjs"],

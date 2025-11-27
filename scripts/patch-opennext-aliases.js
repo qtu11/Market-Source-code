@@ -84,14 +84,20 @@ if (content.includes(originalAlias)) {
                         // Tìm jose trong root node_modules thay vì nested one từ jwks-rsa
                         // fs và path đã được import ở top level của file
                         const rootJoseDir = path.join(buildOpts.appPath, 'node_modules', 'jose');
+                        const josePackageJson = path.join(rootJoseDir, 'package.json');
                         try {
                             // Kiểm tra xem jose có tồn tại trong root node_modules không
-                            if (fs.existsSync(rootJoseDir)) {
-                                // Resolve về directory của jose, esbuild sẽ tự resolve entry point
-                                return { 
-                                    path: rootJoseDir,
-                                    resolveDir: rootJoseDir
-                                };
+                            if (fs.existsSync(josePackageJson)) {
+                                // Đọc package.json để tìm entry point
+                                const pkg = JSON.parse(fs.readFileSync(josePackageJson, 'utf8'));
+                                const entryPoint = pkg.exports?.['.']?.require || pkg.exports?.['.']?.default || pkg.main || 'index.js';
+                                const joseEntryPath = path.join(rootJoseDir, entryPoint);
+                                // Resolve về file entry point cụ thể
+                                if (fs.existsSync(joseEntryPath) || entryPoint === 'index.js') {
+                                    return { 
+                                        path: joseEntryPath
+                                    };
+                                }
                             }
                         } catch (e) {
                             // Nếu có lỗi, để esbuild tự resolve
