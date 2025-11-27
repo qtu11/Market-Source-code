@@ -48,9 +48,14 @@ const originalAlias = `        alias: {
         },`;
 
 // Thay thế bằng resolve plugin thay vì alias
+// Giữ lại "@next/env" vì nó không có dấu "/"
 const patchedAlias = `        // Aliases được xử lý bằng resolve plugin để tránh lỗi "Invalid alias name"
         // Các aliases có dấu "/" sẽ được resolve trong plugin
-        alias: {},`;
+        alias: {
+            // \`@next/env\` is used by Next to load environment variables from files.
+            // OpenNext inlines the values at build time so this is not needed.
+            "@next/env": path.join(buildOpts.outputDir, "cloudflare-templates/shims/env.js"),
+        },`;
 
 if (content.includes(originalAlias)) {
   content = content.replace(originalAlias, patchedAlias);
