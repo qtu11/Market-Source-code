@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import twilio from 'twilio';
 import { logger } from '@/lib/logger';
+import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs'
 
@@ -9,23 +9,9 @@ export async function POST(request: NextRequest) {
     const { to, body } = await request.json();
 
     // Ensure environment variables are set
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+    const data = await sendWhatsAppMessage({ to, body });
 
-    if (!accountSid || !authToken || !whatsappNumber) {
-      throw new Error('Missing Twilio configuration in environment variables');
-    }
-
-    const client = twilio(accountSid, authToken);
-
-    const message = await client.messages.create({
-      body,
-      from: `whatsapp:${whatsappNumber}`,
-      to: `whatsapp:${to}`,
-    });
-
-    return NextResponse.json({ success: true, data: message });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     logger.error('Error sending WhatsApp message', error);
     return NextResponse.json(

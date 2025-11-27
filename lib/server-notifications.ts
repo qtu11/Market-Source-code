@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { sendWhatsAppMessage } from './whatsapp';
 
 type DeviceInfo = {
   deviceType?: string;
@@ -8,9 +9,6 @@ type DeviceInfo = {
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_WHATSAPP_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER;
 
 function formatDeviceInfo(deviceInfo?: DeviceInfo) {
   if (!deviceInfo) {
@@ -42,32 +40,6 @@ async function sendTelegramMessage(message: string) {
     });
   } catch (error) {
     logger.error('Telegram notification failed', error);
-  }
-}
-
-async function sendWhatsAppMessage(to: string, body: string) {
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_NUMBER) {
-    logger.warn('Twilio credentials missing, skip WhatsApp notification');
-    return;
-  }
-
-  try {
-    const auth = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
-
-    await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        From: `whatsapp:${TWILIO_WHATSAPP_NUMBER}`,
-        To: `whatsapp:${to}`,
-        Body: body,
-      }),
-    });
-  } catch (error) {
-    logger.error('WhatsApp notification failed', error);
   }
 }
 
@@ -141,7 +113,14 @@ export async function notifyPasswordReset(payload: {
 
   const adminWhatsapp = process.env.ADMIN_WHATSAPP || '';
   if (adminWhatsapp) {
-    await sendWhatsAppMessage(adminWhatsapp, message.replace(/<[^>]*>/g, ''));
+    try {
+      await sendWhatsAppMessage({
+        to: adminWhatsapp,
+        body: message.replace(/<[^>]*>/g, ''),
+      });
+    } catch (error) {
+      logger.error('WhatsApp notification failed', error);
+    }
   }
 }
 
