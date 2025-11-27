@@ -82,18 +82,19 @@ if (content.includes(originalAlias)) {
                     // Fix jose module từ jwks-rsa - resolve về jose ở root node_modules
                     build.onResolve({ filter: /^jose$/ }, (args) => {
                         // Tìm jose trong root node_modules thay vì nested one từ jwks-rsa
-                        const fs = require('fs');
+                        // fs và path đã được import ở top level của file
                         const rootJoseDir = path.join(buildOpts.appPath, 'node_modules', 'jose');
-                        if (fs.existsSync(rootJoseDir)) {
-                            // Resolve về package.json của jose để esbuild tự resolve entry point
-                            const josePackageJson = path.join(rootJoseDir, 'package.json');
-                            if (fs.existsSync(josePackageJson)) {
-                                // Return path đến package.json, esbuild sẽ tự resolve entry point
+                        try {
+                            // Kiểm tra xem jose có tồn tại trong root node_modules không
+                            if (fs.existsSync(rootJoseDir)) {
+                                // Resolve về directory của jose, esbuild sẽ tự resolve entry point
                                 return { 
-                                    path: josePackageJson,
+                                    path: rootJoseDir,
                                     resolveDir: rootJoseDir
                                 };
                             }
+                        } catch (e) {
+                            // Nếu có lỗi, để esbuild tự resolve
                         }
                         // Nếu không tìm thấy, để esbuild tự resolve
                         return undefined;
