@@ -1,8 +1,8 @@
 diff --git a/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js b/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
-index 95a1a0a..f314f7c 100644
+index 95a1a0a..5d21596 100644
 --- a/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
 +++ b/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
-@@ -81,6 +81,37 @@ export async function bundleServer(buildOpts, projectOpts) {
+@@ -81,6 +81,41 @@ export async function bundleServer(buildOpts, projectOpts) {
              shimRequireHook(buildOpts),
              inlineDynamicRequires(updater, buildOpts),
              setWranglerExternal(),
@@ -23,14 +23,18 @@ index 95a1a0a..f314f7c 100644
 +                    // Fix jose module từ jwks-rsa - resolve về jose ở root node_modules
 +                    build.onResolve({ filter: /^jose$/ }, (args) => {
 +                        // Tìm jose trong root node_modules thay vì nested one từ jwks-rsa
-+                        const rootJosePath = path.join(buildOpts.appPath, 'node_modules', 'jose');
 +                        const fs = require('fs');
-+                        if (fs.existsSync(rootJosePath)) {
-+                            // Resolve về jose ở root node_modules
-+                            return { 
-+                                path: rootJosePath,
-+                                namespace: 'file'
-+                            };
++                        const rootJoseDir = path.join(buildOpts.appPath, 'node_modules', 'jose');
++                        if (fs.existsSync(rootJoseDir)) {
++                            // Resolve về package.json của jose để esbuild tự resolve entry point
++                            const josePackageJson = path.join(rootJoseDir, 'package.json');
++                            if (fs.existsSync(josePackageJson)) {
++                                // Return path đến package.json, esbuild sẽ tự resolve entry point
++                                return { 
++                                    path: josePackageJson,
++                                    resolveDir: rootJoseDir
++                                };
++                            }
 +                        }
 +                        // Nếu không tìm thấy, để esbuild tự resolve
 +                        return undefined;
@@ -40,7 +44,7 @@ index 95a1a0a..f314f7c 100644
              fixRequire(updater),
              handleOptionalDependencies(optionalDependencies),
              patchInstrumentation(updater, buildOpts),
-@@ -96,17 +127,9 @@ export async function bundleServer(buildOpts, projectOpts) {
+@@ -96,17 +131,9 @@ export async function bundleServer(buildOpts, projectOpts) {
              updater.plugin,
          ],
          external: ["./middleware/handler.mjs"],
