@@ -60,15 +60,16 @@ const patchedAlias = `        // Aliases được xử lý bằng resolve plugin
 if (content.includes(originalAlias)) {
   content = content.replace(originalAlias, patchedAlias);
   
-  // Thêm resolve plugin để handle các Next.js internal modules
+  // Thêm resolve plugin để handle các Next.js internal modules và jose
   // Tìm vị trí sau setWranglerExternal() để insert plugin
   const setWranglerExternalPos = content.indexOf('setWranglerExternal(),');
   if (setWranglerExternalPos !== -1) {
     const resolvePlugin = `
-            // Custom resolve plugin để fix aliases có dấu "/"
+            // Custom resolve plugin để fix aliases có dấu "/" và resolve jose
             {
                 name: 'fix-next-aliases',
                 setup(build) {
+                    // Fix Next.js internal modules với dấu "/"
                     build.onResolve({ filter: /^next\\/dist\\/compiled\\/(node-fetch|ws|@ampproject\\/toolbox-optimizer|edge-runtime)$/ }, (args) => {
                         const aliasMap = {
                             'next/dist/compiled/node-fetch': path.join(buildOpts.outputDir, "cloudflare-templates/shims/fetch.js"),
@@ -78,12 +79,33 @@ if (content.includes(originalAlias)) {
                         };
                         return { path: aliasMap[args.path] };
                     });
+                    // Fix jose module từ jwks-rsa - resolve về jose ở root node_modules
+                    build.onResolve({ filter: /^jose$/ }, (args) => {
+                        try {
+                            // Tìm jose trong root node_modules thay vì nested one
+                            const josePath = require.resolve('jose', { 
+                                paths: [buildOpts.appPath, path.join(buildOpts.appPath, 'node_modules')] 
+                            });
+                            // Return path để esbuild bundle nó
+                            return { path: josePath };
+                        } catch (e) {
+                            // Nếu không tìm thấy, để esbuild tự resolve
+                            return undefined;
+                        }
+                    });
                 },
             },`;
     
     // Insert plugin sau setWranglerExternal()
     const insertPos = content.indexOf('setWranglerExternal(),') + 'setWranglerExternal(),'.length;
     content = content.slice(0, insertPos) + resolvePlugin + content.slice(insertPos);
+  }
+  
+  // Thêm jose vào external nếu chưa có (fallback nếu resolve plugin không work)
+  const externalSection = content.indexOf('external: ["./middleware/handler.mjs"]');
+  if (externalSection !== -1 && !content.includes('"jose"')) {
+    // Không thêm vào external, để esbuild bundle nó
+    // Thay vào đó, đảm bảo jose được resolve đúng trong resolve plugin
   }
   
   fs.writeFileSync(bundleServerPath, content, 'utf8');

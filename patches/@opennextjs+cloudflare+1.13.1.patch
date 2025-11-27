@@ -1,15 +1,16 @@
 diff --git a/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js b/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
-index 95a1a0a..b63665c 100644
+index 95a1a0a..705180b 100644
 --- a/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
 +++ b/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
-@@ -81,6 +81,21 @@ export async function bundleServer(buildOpts, projectOpts) {
+@@ -81,6 +81,36 @@ export async function bundleServer(buildOpts, projectOpts) {
              shimRequireHook(buildOpts),
              inlineDynamicRequires(updater, buildOpts),
              setWranglerExternal(),
-+            // Custom resolve plugin để fix aliases có dấu "/"
++            // Custom resolve plugin để fix aliases có dấu "/" và resolve jose
 +            {
 +                name: 'fix-next-aliases',
 +                setup(build) {
++                    // Fix Next.js internal modules với dấu "/"
 +                    build.onResolve({ filter: /^next\/dist\/compiled\/(node-fetch|ws|@ampproject\/toolbox-optimizer|edge-runtime)$/ }, (args) => {
 +                        const aliasMap = {
 +                            'next/dist/compiled/node-fetch': path.join(buildOpts.outputDir, "cloudflare-templates/shims/fetch.js"),
@@ -19,12 +20,26 @@ index 95a1a0a..b63665c 100644
 +                        };
 +                        return { path: aliasMap[args.path] };
 +                    });
++                    // Fix jose module từ jwks-rsa - resolve về jose ở root node_modules
++                    build.onResolve({ filter: /^jose$/ }, (args) => {
++                        try {
++                            // Tìm jose trong root node_modules thay vì nested one
++                            const josePath = require.resolve('jose', { 
++                                paths: [buildOpts.appPath, path.join(buildOpts.appPath, 'node_modules')] 
++                            });
++                            // Return path để esbuild bundle nó
++                            return { path: josePath };
++                        } catch (e) {
++                            // Nếu không tìm thấy, để esbuild tự resolve
++                            return undefined;
++                        }
++                    });
 +                },
 +            },
              fixRequire(updater),
              handleOptionalDependencies(optionalDependencies),
              patchInstrumentation(updater, buildOpts),
-@@ -96,17 +111,9 @@ export async function bundleServer(buildOpts, projectOpts) {
+@@ -96,17 +126,9 @@ export async function bundleServer(buildOpts, projectOpts) {
              updater.plugin,
          ],
          external: ["./middleware/handler.mjs"],
