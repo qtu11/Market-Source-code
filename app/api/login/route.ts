@@ -3,12 +3,10 @@ import { getUserByEmail, createOrUpdateUser } from '@/lib/database';
 import { getClientIP } from '@/lib/api-auth';
 import bcrypt from 'bcryptjs';
 
-export const runtime = 'nodejs'
-
 /**
  * API Login - Xác thực user với email/password
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest){
   try {
     // ✅ FIX: Thêm rate limiting để tránh brute force attack
     const { checkRateLimitAndRespond } = await import('@/lib/rate-limit');

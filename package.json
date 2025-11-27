@@ -121,7 +121,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.5",
     "@opennextjs/cloudflare": "^1.13.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22",

@@ -4,8 +4,6 @@ import { Inter } from "next/font/google"
 import "@/app/globals.css"
 import { ClientLayout } from "@/components/client-layout"
 
-export const runtime = 'nodejs'
-
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {

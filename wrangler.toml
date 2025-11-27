@@ -3,9 +3,17 @@ compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".open-next"
 
+[observability]
+enabled = true
+
+[build]
+command = "npm run cf:build"
+watch_dir = ".open-next"
+
 [vars]
 NODE_VERSION = "20.14.0"
 
-[observability]
-enabled = true
+[build.upload]
+format = "service-worker"
+main = ".open-next/worker.js"
 
