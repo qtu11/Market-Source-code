@@ -1,8 +1,18 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
+const isDockerBuild = process.env.DOCKER_BUILD === 'true';
+const isCloudflarePages =
+  process.env.CF_PAGES === '1' ||
+  process.env.CLOUDFLARE_PAGES === '1' ||
+  Boolean(process.env.CF_PAGES_BRANCH);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // Cloudflare build không cần lint lại để tránh timeout
+    ignoreDuringBuilds: isCloudflarePages,
+  },
   typescript: {
     ignoreBuildErrors: false,
   },
@@ -54,9 +64,9 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-    // ✅ FIX: Chỉ unoptimized khi deploy static (Netlify static)
-    // Với Vercel/Docker, để false để tận dụng Next.js Image Optimization
-    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',
+    // ✅ FIX: Cloudflare Pages chưa hỗ trợ Image Optimization của Next.js
+    // nên buộc phải unoptimized để dùng CDN của Cloudflare
+    unoptimized: isCloudflarePages || process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',
   },
   // ✅ FIX: Next.js tự động expose NEXT_PUBLIC_* variables
   // Chỉ cần config server-side only variables nếu thực sự cần
@@ -87,12 +97,15 @@ const nextConfig = {
   },
   // Skip static generation for admin routes
   generateBuildId: async () => {
+    if (isCloudflarePages) {
+      return process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12) || 'cf-build';
+    }
     return 'build-' + Date.now();
   },
   // Disable static optimization for all pages (use dynamic rendering)
   // ✅ FIX: Conditional output - standalone cho Docker, undefined cho Netlify
   // Netlify plugin tự động xử lý Next.js output, không cần standalone
-  output: process.env.DOCKER_BUILD === 'true' ? 'standalone' : undefined,
+  output: isDockerBuild && !isCloudflarePages ? 'standalone' : undefined,
 }
 
 export default nextConfig;
