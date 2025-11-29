@@ -19,8 +19,11 @@ COPY . .
 # Build ứng dụng Next.js
 RUN npm run build
 
+# Cấp quyền thực thi cho script khởi động
+RUN chmod +x scripts/docker-entrypoint.sh
+
 # Mở port 3000
 EXPOSE 3000
 
-# Chạy ứng dụng
-CMD ["npm", "start"]
+# Chạy ứng dụng (đảm bảo migrate trước khi start)
+CMD ["./scripts/docker-entrypoint.sh"]

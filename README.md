@@ -71,6 +71,30 @@ npm run dev
 
 Truy cập [http://localhost:3000](http://localhost:3000) để xem website.
 
+## 🐳 Docker + Supabase/PostgreSQL
+
+1. Tạo file `.env` (có thể reuse `.env.local`) và đảm bảo có tối thiểu:
+   ```
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=postgres
+   POSTGRES_DB=postgres
+   DATABASE_URL=postgresql://postgres:postgres@supabase-db:5432/postgres?schema=public
+   DIRECT_URL=${DATABASE_URL}
+   NEXTAUTH_URL=http://localhost:3000
+   ```
+2. Build & chạy toàn bộ stack (Next.js + Supabase Postgres):
+   ```bash
+   docker compose up --build
+   ```
+3. Container `web` tự `npx prisma migrate deploy` trước khi khởi động `next start`.
+4. Dừng dịch vụ:
+   ```bash
+   docker compose down
+   ```
+   Thêm `-v` nếu muốn xóa dữ liệu database.
+
+> Port 3000 (Next.js) và 5432 (Supabase Postgres) được bind ra host nên bạn có thể kết nối bằng các PostgreSQL client để debug dữ liệu.
+
 ### Phiên bản Node bắt buộc
 
 - Node.js >= 20.14.0
