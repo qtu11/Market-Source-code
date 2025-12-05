@@ -14,9 +14,11 @@ import { Footer } from "@/components/footer"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300 relative">
+      {/* 3D Liquid Background */}
+      <div className="liquid-3d-bg" />
       <FloatingHeader />
-      <main className="pt-20 md:pt-24">
+      <main className="pt-20 md:pt-24 relative z-10">
         <div className="animate-fade-in-up">
           <HeroSection />
         </div>

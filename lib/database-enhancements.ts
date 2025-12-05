@@ -1,14 +1,5 @@
-import { pool } from './database';
+import { query as mysqlQuery } from './database-mysql';
 import { logger } from './logger';
-
-function sanitizeTsQuery(input: string) {
-  return input
-    .replace(/['":()&|!]/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .join(' & ');
-}
 
 // ============================================================
 // WISHLIST FUNCTIONS
@@ -16,65 +7,69 @@ function sanitizeTsQuery(input: string) {
 
 export async function addToWishlist(userId: number, productId: number) {
   try {
-    const result = await pool.query(
+    await mysqlQuery(
       `INSERT INTO wishlists (user_id, product_id)
-       VALUES ($1, $2)
-       ON CONFLICT (user_id, product_id) DO NOTHING
-       RETURNING id, created_at`,
+       VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE user_id = user_id`,
       [userId, productId]
-    );
-    
-    return result.rows[0] || null;
+    )
+
+    const rows = await mysqlQuery<any>(
+      'SELECT id, created_at FROM wishlists WHERE user_id = ? AND product_id = ? ORDER BY created_at DESC LIMIT 1',
+      [userId, productId]
+    )
+
+    return rows[0] || null
   } catch (error) {
-    logger.error('Error adding to wishlist:', error);
-    throw error;
+    logger.error('Error adding to wishlist (MySQL):', error)
+    throw error
   }
 }
 
 export async function removeFromWishlist(userId: number, productId: number) {
   try {
-    await pool.query(
-      'DELETE FROM wishlists WHERE user_id = $1 AND product_id = $2',
+    await mysqlQuery(
+      'DELETE FROM wishlists WHERE user_id = ? AND product_id = ?',
       [userId, productId]
-    );
-    return { success: true };
+    )
+    return { success: true }
   } catch (error) {
-    logger.error('Error removing from wishlist:', error);
-    throw error;
+    logger.error('Error removing from wishlist (MySQL):', error)
+    throw error
   }
 }
 
 export async function getWishlist(userId: number) {
   try {
     // ✅ FIX: Dùng product_ratings thay vì query reviews trực tiếp để tối ưu performance
-    const result = await pool.query(
+    const rows = await mysqlQuery<any>(
       `SELECT w.*, p.*, 
               COALESCE(pr.average_rating, 0) as avg_rating,
               COALESCE(pr.total_ratings, 0) as review_count
        FROM wishlists w
        JOIN products p ON w.product_id = p.id
        LEFT JOIN product_ratings pr ON p.id = pr.product_id
-       WHERE w.user_id = $1
+       WHERE w.user_id = ?
        ORDER BY w.created_at DESC`,
       [userId]
-    );
-    return result.rows;
+    )
+    return rows
   } catch (error) {
-    logger.error('Error getting wishlist:', error);
-    throw error;
+    logger.error('Error getting wishlist (MySQL):', error)
+    throw error
   }
 }
 
 export async function isInWishlist(userId: number, productId: number): Promise<boolean> {
   try {
-    const result = await pool.query(
-      'SELECT id FROM wishlists WHERE user_id = $1 AND product_id = $2',
+    const rows = await mysqlQuery<any>(
+      'SELECT id FROM wishlists WHERE user_id = ? AND product_id = ?',
       [userId, productId]
-    );
-    return result.rows.length > 0;
+    )
+    return rows.length > 0
   } catch (error) {
-    logger.error('Error checking wishlist:', error);
-    return false;
+    logger.error('Error checking wishlist (MySQL):', error)
+    return false
   }
 }
 
@@ -91,112 +86,74 @@ export async function searchProducts(query: string, filters?: {
   offset?: number;
 }) {
   try {
-    // ✅ FIX: Check xem có search_vector column không, nếu không thì dùng LIKE search
-    const checkColumnResult = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'products' AND column_name = 'search_vector'
-    `);
-    
-    const hasSearchVector = checkColumnResult.rows.length > 0;
-    
-    let sql: string;
-    const params: any[] = [];
-    let paramIndex = 1;
-    
-    if (hasSearchVector) {
-      const tsQuery = sanitizeTsQuery(query) || query.replace(/\s+/g, ' & ');
+    // ✅ MySQL: dùng LIKE + JSON_SEARCH trên tags (JSON) thay cho full-text Postgres
+    let sql = `
+      SELECT p.*,
+             pr.average_rating as avg_rating,
+             pr.total_ratings as review_count,
+             1 as rank
+      FROM products p
+      LEFT JOIN product_ratings pr ON p.id = pr.product_id
+      WHERE p.is_active = 1
+        AND (
+          p.title LIKE ?
+          OR p.description LIKE ?
+          OR (p.tags IS NOT NULL AND JSON_SEARCH(p.tags, 'one', ?, NULL) IS NOT NULL)
+        )
+    `
+    const params: any[] = []
+    const likeQuery = `%${query}%`
+    params.push(likeQuery, likeQuery, likeQuery)
 
-      // Use full-text search với search_vector
-      sql = `
-        SELECT p.*,
-               pr.average_rating as avg_rating,
-               pr.total_ratings as review_count,
-               ts_rank(p.search_vector, to_tsquery('english', $${paramIndex})) as rank
-        FROM products p
-        LEFT JOIN product_ratings pr ON p.id = pr.product_id
-        WHERE p.search_vector @@ to_tsquery('english', $${paramIndex})
-          AND p.is_active = true
-      `;
-      params.push(tsQuery);
-      paramIndex++;
-    } else {
-      // ✅ FIX: Fallback to LIKE search nếu không có search_vector
-      sql = `
-        SELECT p.*,
-               pr.average_rating as avg_rating,
-               pr.total_ratings as review_count,
-               1 as rank
-        FROM products p
-        LEFT JOIN product_ratings pr ON p.id = pr.product_id
-        WHERE p.is_active = true
-          AND (
-            p.title ILIKE $${paramIndex}
-            OR p.description ILIKE $${paramIndex}
-            OR EXISTS (
-              SELECT 1 FROM unnest(p.tags) tag 
-              WHERE tag ILIKE $${paramIndex}
-            )
-          )
-      `;
-      params.push(`%${query}%`);
-      paramIndex++;
-    }
-    
     if (filters?.category) {
-      sql += ` AND p.category = $${paramIndex}`;
-      params.push(filters.category);
-      paramIndex++;
+      sql += ` AND p.category = ?`
+      params.push(filters.category)
     }
     
     if (filters?.minPrice !== undefined) {
-      sql += ` AND p.price >= $${paramIndex}`;
-      params.push(filters.minPrice);
-      paramIndex++;
+      sql += ` AND p.price >= ?`
+      params.push(filters.minPrice)
     }
     
     if (filters?.maxPrice !== undefined) {
-      sql += ` AND p.price <= $${paramIndex}`;
-      params.push(filters.maxPrice);
-      paramIndex++;
+      sql += ` AND p.price <= ?`
+      params.push(filters.maxPrice)
     }
     
     if (filters?.minRating !== undefined) {
       // ✅ FIX: Dùng product_ratings thay vì query reviews trực tiếp
-      sql += ` AND (pr.average_rating >= $${paramIndex} OR pr.average_rating IS NULL)`;
-      params.push(filters.minRating);
-      paramIndex++;
+      sql += ` AND (pr.average_rating >= ? OR pr.average_rating IS NULL)`
+      params.push(filters.minRating)
     }
     
-    // ✅ FIX: Order by rank nếu có, nếu không thì order by created_at
-    if (hasSearchVector) {
-      sql += ` ORDER BY rank DESC, p.created_at DESC`;
-    } else {
-      sql += ` ORDER BY 
+    // ✅ Order theo "độ khớp" đơn giản + created_at
+    sql += `
+      ORDER BY 
         CASE 
-          WHEN p.title ILIKE $${paramIndex - 1} THEN 1
-          WHEN p.description ILIKE $${paramIndex - 1} THEN 2
+          WHEN p.title LIKE ? THEN 1
+          WHEN p.description LIKE ? THEN 2
           ELSE 3
         END,
-        p.created_at DESC`;
-    }
+        p.created_at DESC
+    `
+    params.push(likeQuery, likeQuery)
     
     if (filters?.limit) {
-      sql += ` LIMIT $${paramIndex}`;
-      params.push(filters.limit);
-      paramIndex++;
+      sql += ` LIMIT ?`
+      params.push(filters.limit)
     }
     
     if (filters?.offset) {
-      sql += ` OFFSET $${paramIndex}`;
-      params.push(filters.offset);
+      sql += ` OFFSET ?`
+      params.push(filters.offset)
     }
     
-    const result = await pool.query(sql, params);
-    return result.rows;
+    const sqlStr = String(sql)
+    const rows = await mysqlQuery<any>(sqlStr, params)
+    return rows
   } catch (error) {
-    logger.error('Error searching products:', error);
-    throw error;
+    logger.error('Error searching products (MySQL):', error)
+    throw error
   }
 }
 
@@ -206,44 +163,44 @@ export async function searchProducts(query: string, filters?: {
 
 export async function trackEvent(eventType: string, eventData: any, userId?: number, ipAddress?: string, userAgent?: string) {
   try {
-    await pool.query(
+    await mysqlQuery(
       `INSERT INTO analytics_events (user_id, event_type, event_data, ip_address, user_agent)
-       VALUES ($1, $2, $3, $4, $5)`,
+       VALUES (?, ?, ?, ?, ?)`,
       [userId || null, eventType, JSON.stringify(eventData), ipAddress || null, userAgent || null]
-    );
+    )
   } catch (error) {
-    logger.error('Error tracking event:', error);
+    logger.error('Error tracking event (MySQL):', error)
     // Don't throw - analytics should not break the app
   }
 }
 
 export async function trackProductView(productId: number, userId?: number, ipAddress?: string) {
   try {
-    await pool.query(
+    await mysqlQuery(
       `INSERT INTO product_views (product_id, user_id, ip_address)
-       VALUES ($1, $2, $3)`,
+       VALUES (?, ?, ?)`,
       [productId, userId || null, ipAddress || null]
-    );
+    )
   } catch (error) {
-    logger.error('Error tracking product view:', error);
+    logger.error('Error tracking product view (MySQL):', error)
   }
 }
 
 export async function getProductViews(productId: number, days: number = 30) {
   try {
     // ✅ FIX: Thêm parameterized query để tránh SQL injection
-    const result = await pool.query(
+    const rows = await mysqlQuery<any>(
       `SELECT COUNT(*) as total_views,
               COUNT(DISTINCT user_id) as unique_views
        FROM product_views
-       WHERE product_id = $1
-         AND viewed_at >= NOW() - INTERVAL '1 day' * $2`,
+       WHERE product_id = ?
+         AND viewed_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
       [productId, days]
-    );
-    return result.rows[0];
+    )
+    return rows[0]
   } catch (error) {
-    logger.error('Error getting product views:', error);
-    throw error;
+    logger.error('Error getting product views (MySQL):', error)
+    throw error
   }
 }
 
@@ -259,49 +216,50 @@ export async function getBundles(isActive?: boolean) {
       FROM bundles b
       LEFT JOIN bundle_products bp ON b.id = bp.bundle_id
     `;
-    const params: any[] = [];
+    const params: any[] = []
     
     if (isActive !== undefined) {
-      query += ' WHERE b.is_active = $1';
-      params.push(isActive);
+      query += ' WHERE b.is_active = ?'
+      params.push(isActive ? 1 : 0)
     }
     
-    query += ' GROUP BY b.id ORDER BY b.created_at DESC';
+    query += ' GROUP BY b.id ORDER BY b.created_at DESC'
     
-    const result = await pool.query(query, params);
-    return result.rows;
+    const sqlStr = String(query)
+    const rows = await mysqlQuery<any>(sqlStr, params)
+    return rows
   } catch (error) {
-    logger.error('Error getting bundles:', error);
-    throw error;
+    logger.error('Error getting bundles (MySQL):', error)
+    throw error
   }
 }
 
 export async function getBundleWithProducts(bundleId: number) {
   try {
-    const bundleResult = await pool.query(
-      'SELECT * FROM bundles WHERE id = $1',
+    const bundleRows = await mysqlQuery<any>(
+      'SELECT * FROM bundles WHERE id = ?',
       [bundleId]
-    );
+    )
     
-    if (bundleResult.rows.length === 0) {
-      return null;
+    if (!bundleRows.length) {
+      return null
     }
     
-    const productsResult = await pool.query(
+    const productRows = await mysqlQuery<any>(
       `SELECT p.*
        FROM products p
        JOIN bundle_products bp ON p.id = bp.product_id
-       WHERE bp.bundle_id = $1`,
+       WHERE bp.bundle_id = ?`,
       [bundleId]
-    );
+    )
     
     return {
-      ...bundleResult.rows[0],
-      products: productsResult.rows,
-    };
+      ...bundleRows[0],
+      products: productRows,
+    }
   } catch (error) {
-    logger.error('Error getting bundle with products:', error);
-    throw error;
+    logger.error('Error getting bundle with products (MySQL):', error)
+    throw error
   }
 }
 
@@ -311,30 +269,29 @@ export async function getBundleWithProducts(bundleId: number) {
 
 export async function voteReview(reviewId: number, userId: number, isHelpful: boolean) {
   try {
-    const result = await pool.query(
+    await mysqlQuery(
       `INSERT INTO review_votes (review_id, user_id, is_helpful)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (review_id, user_id)
-       DO UPDATE SET is_helpful = EXCLUDED.is_helpful
-       RETURNING id`,
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE is_helpful = VALUES(is_helpful)`,
       [reviewId, userId, isHelpful]
-    );
+    )
     
     // Update helpful_count
-    await pool.query(
+    await mysqlQuery(
       `UPDATE reviews 
        SET helpful_count = (
          SELECT COUNT(*) FROM review_votes 
-         WHERE review_id = $1 AND is_helpful = true
+         WHERE review_id = ? AND is_helpful = 1
        )
-       WHERE id = $1`,
+       WHERE id = ?`,
       [reviewId]
-    );
+    )
     
-    return result.rows[0];
+    const rows = await mysqlQuery<any>('SELECT id FROM review_votes WHERE review_id = ? AND user_id = ?', [reviewId, userId])
+    return rows[0] || null
   } catch (error) {
-    logger.error('Error voting review:', error);
-    throw error;
+    logger.error('Error voting review (MySQL):', error)
+    throw error
   }
 }
 
@@ -344,19 +301,19 @@ export async function voteReview(reviewId: number, userId: number, isHelpful: bo
 
 export async function getUserSubscription(userId: number) {
   try {
-    const result = await pool.query(
+    const rows = await mysqlQuery<any>(
       `SELECT s.*, sb.*
        FROM subscriptions s
        LEFT JOIN subscription_benefits sb ON s.plan = sb.plan
-       WHERE s.user_id = $1 AND s.status = 'active'
+       WHERE s.user_id = ? AND s.status = 'active'
        ORDER BY s.start_date DESC
        LIMIT 1`,
       [userId]
-    );
-    return result.rows[0] || null;
+    )
+    return rows[0] || null
   } catch (error) {
-    logger.error('Error getting user subscription:', error);
-    throw error;
+    logger.error('Error getting user subscription (MySQL):', error)
+    throw error
   }
 }
 

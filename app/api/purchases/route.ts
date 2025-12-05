@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getPurchases, createPurchase, getProductById } from "@/lib/database";
-import { verifyFirebaseToken, validateRequest } from "@/lib/api-auth";
-import { purchaseSchema } from "@/lib/validation-schemas";
-import { notifyPurchaseSuccess } from "@/lib/server-notifications";
-import { logger } from "@/lib/logger";
+import { NextRequest, NextResponse } from "next/server"
+import { getPurchases, createPurchase, getProductById, getUserIdByEmail, normalizeUserIdMySQL } from "@/lib/database-mysql"
+import { verifyFirebaseToken, validateRequest } from "@/lib/api-auth"
+import { purchaseSchema } from "@/lib/validation-schemas"
+import { notifyPurchaseSuccess } from "@/lib/server-notifications"
+import { logger } from "@/lib/logger"
 
 export const runtime = 'nodejs'
 
@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
     if (userId && authUser && !isAdmin) {
       // userId từ query param có thể là number (PostgreSQL ID) hoặc string (Firebase UID)
       // Cần check bằng cách so sánh email hoặc convert userId sang uid
-      const { getUserIdByEmail } = await import('@/lib/database');
       const dbUserId = await getUserIdByEmail(authUser.email || '');
       const userIdNum = parseInt(userId);
       
@@ -51,19 +50,16 @@ export async function GET(request: NextRequest) {
     }
     
     // ✅ FIX: Convert userId đúng cách (number hoặc string)
-    let dbUserId: number | undefined = undefined;
+    let dbUserId: number | undefined = undefined
     if (userId) {
       if (!isNaN(parseInt(userId))) {
-        // userId là number (PostgreSQL ID)
-        dbUserId = parseInt(userId);
+        dbUserId = parseInt(userId)
       } else {
-        // userId là string (Firebase UID), cần tìm DB ID
-        const { getUserIdByEmail } = await import('@/lib/database');
-        dbUserId = await getUserIdByEmail(authUser?.email || '') || undefined;
+        dbUserId = await getUserIdByEmail(authUser?.email || "") || undefined
       }
     }
-    
-    const purchases = await getPurchases(dbUserId);
+
+    const purchases = await getPurchases(dbUserId)
     
     return NextResponse.json({ 
       success: true,
@@ -72,7 +68,7 @@ export async function GET(request: NextRequest) {
       error: null 
     });
   } catch (error: unknown) {
-    const { createErrorResponse, logError } = await import('@/lib/error-handler');
+    const { createErrorResponse, logError } = await import("@/lib/error-handler")
     logError('Purchases GET', error);
     return NextResponse.json(
       createErrorResponse(error, 500),
@@ -142,8 +138,10 @@ export async function POST(request: NextRequest) {
     }
     
     // ✅ FIX: Normalize userId - nếu là string (uid), dùng email để tìm DB ID
-    const { normalizeUserId } = await import('@/lib/database');
-    const dbUserId = await normalizeUserId(purchaseData.userId || authUser.uid, authUser.email || undefined);
+    const dbUserId = await normalizeUserIdMySQL(
+      purchaseData.userId || authUser.uid,
+      authUser.email || undefined,
+    )
     
     if (!dbUserId) {
       return NextResponse.json({

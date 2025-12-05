@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createOrUpdateUser } from '@/lib/database'
+import { createOrUpdateUser } from '@/lib/database-mysql'
 import { logger } from '@/lib/logger'
 import { requireAdmin } from '@/lib/api-auth'
 import { checkRateLimitAndRespond } from '@/lib/rate-limit'

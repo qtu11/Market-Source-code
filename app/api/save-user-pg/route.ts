@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getClientIP } from '@/lib/api-auth';
-import { createOrUpdateUser } from '@/lib/database';
+import { createOrUpdateUser } from '@/lib/database-mysql';
 import bcrypt from 'bcryptjs';
 import { logger } from '@/lib/logger';
 

@@ -6,12 +6,16 @@ const isCloudflarePages =
   process.env.CF_PAGES === '1' ||
   process.env.CLOUDFLARE_PAGES === '1' ||
   Boolean(process.env.CF_PAGES_BRANCH);
+const isVercel = process.env.VERCEL === '1';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    // Cloudflare build không cần lint lại để tránh timeout
-    ignoreDuringBuilds: isCloudflarePages,
+    // Skip lint trong build để tránh lỗi vòng lặp plugin; có thể bật lại bằng NEXT_FORCE_ESLINT=true
+    ignoreDuringBuilds:
+      process.env.NEXT_FORCE_ESLINT === 'true'
+        ? false
+        : true,
   },
   typescript: {
     ignoreBuildErrors: false,

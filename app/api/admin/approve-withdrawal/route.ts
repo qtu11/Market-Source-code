@@ -3,9 +3,9 @@ import {
   approveWithdrawalAndUpdateBalance,
   updateWithdrawalStatus,
   getUserById,
-  normalizeUserId,
+  normalizeUserIdMySQL as normalizeUserId,
   getUserIdByEmail,
-} from "@/lib/database"
+} from "@/lib/database-mysql"
 import { requireAdmin, validateRequest } from "@/lib/api-auth"
 import { userManager } from "@/lib/userManager"
 
@@ -57,21 +57,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'approve') {
-      // ✅ FIX: Query trực tiếp withdrawal với lock để tránh race condition
-      const { pool } = await import('@/lib/database');
-      const withdrawalResult = await pool.query(
-        'SELECT id, user_id, amount, status FROM withdrawals WHERE id = $1 FOR UPDATE',
+      // ✅ FIX: Query withdrawal để validate (không cần FOR UPDATE vì approveWithdrawalAndUpdateBalanceMySQL đã có transaction)
+      const { queryOne } = await import('@/lib/database-mysql');
+      const withdrawal = await queryOne<any>(
+        'SELECT id, user_id, amount, status FROM withdrawals WHERE id = ?',
         [withdrawalId]
       );
       
-      if (withdrawalResult.rows.length === 0) {
+      if (!withdrawal) {
         return NextResponse.json(
           { success: false, error: 'Withdrawal not found' },
           { status: 404 }
         );
       }
-
-      const withdrawal = withdrawalResult.rows[0];
 
       // ✅ FIX: Validate withdrawal status
       if (withdrawal.status === 'approved') {
@@ -138,9 +136,47 @@ export async function POST(request: NextRequest) {
           logger.warn('userManager sync failed (non-critical)', { error: syncError, userId });
         }
       }
+
+      // ✅ FIX: Tạo notification cho user khi withdrawal được approve
+      try {
+        const { createNotification } = await import('@/lib/database-mysql');
+        await createNotification({
+          userId: dbUserId,
+          type: 'withdrawal_approved',
+          message: `Yêu cầu rút tiền ${amount.toLocaleString('vi-VN')}đ đã được duyệt. Tiền sẽ được chuyển vào tài khoản của bạn trong vòng 1-3 ngày làm việc. Số dư hiện tại: ${result.newBalance.toLocaleString('vi-VN')}đ`,
+          isRead: false,
+        });
+      } catch (notifError) {
+        const { logger } = await import('@/lib/logger');
+        logger.warn('Failed to create notification (non-critical)', { error: notifError, userId: dbUserId });
+      }
     } else if (action === 'reject') {
+      // Normalize userId cho reject action
+      const dbUserIdForReject = await normalizeUserId(userId, userEmail);
+      
+      if (!dbUserIdForReject) {
+        return NextResponse.json(
+          { success: false, error: 'Cannot resolve user ID. User may not exist in database.' },
+          { status: 400 }
+        );
+      }
+      
       // Update withdrawal status to rejected
       await updateWithdrawalStatus(parseInt(withdrawalId), 'rejected');
+      
+      // ✅ FIX: Tạo notification cho user khi withdrawal bị reject
+      try {
+        const { createNotification } = await import('@/lib/database-mysql');
+        await createNotification({
+          userId: dbUserIdForReject,
+          type: 'withdrawal_rejected',
+          message: `Yêu cầu rút tiền ${amount.toLocaleString('vi-VN')}đ đã bị từ chối. Vui lòng liên hệ admin để biết thêm chi tiết.`,
+          isRead: false,
+        });
+      } catch (notifError) {
+        const { logger } = await import('@/lib/logger');
+        logger.warn('Failed to create notification (non-critical)', { error: notifError, userId: dbUserIdForReject });
+      }
     }
 
     // Send notification

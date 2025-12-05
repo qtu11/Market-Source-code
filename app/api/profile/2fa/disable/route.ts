@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { disableUserTwoFactor, getUserByEmail } from "@/lib/database"
+import { disableUserTwoFactor, getUserByEmail } from "@/lib/database-mysql"
 import { logger } from "@/lib/logger"
 
 export const runtime = 'nodejs'

@@ -3,6 +3,7 @@
 import React, { Suspense } from "react"
 import dynamic from "next/dynamic"
 import { Providers } from "@/components/providers"
+import { CustomCursor } from "@/components/custom-cursor"
 
 const ChatWidget = dynamic(
   () => import("@/components/chat-widget").then(mod => ({ default: mod.ChatWidget })),
@@ -34,12 +35,13 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     <Providers>
       <Suspense fallback={<div className="min-h-screen bg-background" />}>
         <ErrorBoundary>
-          <div className="min-h-screen bg-background text-foreground antialiased">
+          <div className="min-h-screen bg-background text-foreground antialiased cursor-none">
             {children}
             <Suspense fallback={null}>
               <ChatWidget />
             </Suspense>
             <ServiceWorkerRegister />
+            <CustomCursor />
           </div>
         </ErrorBoundary>
       </Suspense>

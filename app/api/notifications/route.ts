@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createNotification } from "@/lib/database"
+import { createNotification } from "@/lib/database-mysql"
 import { verifyFirebaseToken, requireAdmin } from "@/lib/api-auth"
-import { getUserIdByEmail } from "@/lib/database"
+import { getUserIdByEmail } from "@/lib/database-mysql"
 
 export const runtime = 'nodejs'
 
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { getNotifications, getUserIdByEmail } = await import('@/lib/database');
+    const { getNotifications, getUserIdByEmail } = await import('@/lib/database-mysql');
     const userId = await getUserIdByEmail(authUser.email || '');
     
     if (!userId) {

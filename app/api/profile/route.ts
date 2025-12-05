@@ -5,7 +5,7 @@ import {
   getUserById,
   getUserProfileByUserId,
   upsertUserProfile,
-} from "@/lib/database"
+} from "@/lib/database-mysql"
 import { logger } from "@/lib/logger"
 
 export const runtime = "nodejs"

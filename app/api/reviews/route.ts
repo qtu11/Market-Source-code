@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyFirebaseToken, validateRequest } from '@/lib/api-auth';
-import { pool, getUserIdByEmail } from '@/lib/database';
+import { query, queryOne, getUserIdByEmail, createReview, getReviews, getProductAverageRating } from '@/lib/database-mysql';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 
@@ -48,47 +48,42 @@ export async function POST(request: NextRequest) {
     }
     
     // ✅ FIX: Enforce user phải mua sản phẩm trước khi review
-    const purchaseCheck = await pool.query(
-      'SELECT id FROM purchases WHERE user_id = $1 AND product_id = $2',
+    const purchaseCheck = await query<any>(
+      'SELECT id FROM purchases WHERE user_id = ? AND product_id = ?',
       [userId, productId]
     );
-    if (purchaseCheck.rows.length === 0) {
+    if (purchaseCheck.length === 0) {
       return NextResponse.json({ 
         success: false, 
         error: 'Bạn cần mua sản phẩm trước khi đánh giá' 
       }, { status: 403 });
     }
     
-    // Insert review (ON CONFLICT để update nếu đã có review)
-    const result = await pool.query(
-      `INSERT INTO reviews (user_id, product_id, rating, comment)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (user_id, product_id)
-       DO UPDATE SET 
-         rating = EXCLUDED.rating, 
-         comment = EXCLUDED.comment, 
-         updated_at = CURRENT_TIMESTAMP
-       RETURNING id, created_at, updated_at`,
-      [userId, productId, rating, comment || null]
-    );
+    // Insert review (ON DUPLICATE KEY UPDATE để update nếu đã có review)
+    const result = await createReview({
+      userId,
+      productId,
+      rating,
+      comment: comment || null,
+    });
     
     return NextResponse.json({
       success: true,
       review: {
-        id: result.rows[0].id,
+        id: result.id,
         userId,
         productId,
         rating,
         comment: comment || null,
-        createdAt: result.rows[0].created_at,
-        updatedAt: result.rows[0].updated_at
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt
       }
     });
   } catch (error: any) {
     logger.error('Review POST error', error);
     
-    // Handle unique constraint violation
-    if (error.code === '23505') {
+    // Handle unique constraint violation (MySQL error code 1062)
+    if (error.code === '23505' || error.code === 1062) {
       return NextResponse.json({
         success: false,
         error: 'Bạn đã đánh giá sản phẩm này rồi'
@@ -109,88 +104,53 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const productId = searchParams.get('productId');
-    const userId = searchParams.get('userId');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100); // ✅ FIX: Max limit 100
-    const offset = Math.max(parseInt(searchParams.get('offset') || '0'), 0); // ✅ FIX: Min offset 0
+    const productIdParam = searchParams.get('productId');
+    const userIdParam = searchParams.get('userId');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const offset = Math.max(parseInt(searchParams.get('offset') || '0'), 0);
     
-    let query = `
-      SELECT r.*, 
-             u.username, 
-             u.email,
-             pr.title as product_title
-      FROM reviews r
-      JOIN users u ON r.user_id = u.id
-      LEFT JOIN products pr ON r.product_id = pr.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramIndex = 1;
+    const filters: any = {
+      limit,
+      offset,
+    };
     
-    if (productId) {
-      query += ` AND r.product_id = $${paramIndex}`;
-      params.push(parseInt(productId));
-      paramIndex++;
-      
-      if (userId) {
-        query += ` AND r.user_id = $${paramIndex}`;
-        params.push(parseInt(userId));
-        paramIndex++;
-      }
-    } else if (userId) {
-      query += ` AND r.user_id = $${paramIndex}`;
-      params.push(parseInt(userId));
-      paramIndex++;
+    if (productIdParam) {
+      filters.productId = parseInt(productIdParam);
     }
     
-    // ✅ FIX: Sửa lỗi paramIndex trùng lặp - fix đúng cách
-    query += ` ORDER BY r.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit);
-    params.push(offset);
-    // paramIndex không cần tăng nữa vì đã dùng xong
+    if (userIdParam) {
+      filters.userId = parseInt(userIdParam);
+    }
     
-    const result = await pool.query(query, params);
+    const reviews = await getReviews(filters);
     
     // Get average rating nếu có productId
     let averageRating = null;
-    if (productId) {
-      // ✅ FIX: Dùng bảng product_ratings thay vì VIEW
-      const avgResult = await pool.query(
-        'SELECT * FROM product_ratings WHERE product_id = $1',
-        [parseInt(productId)]
+    if (productIdParam) {
+      const ratingData = await getProductAverageRating(parseInt(productIdParam));
+      
+      // Get min/max từ reviews
+      const minMaxResult = await queryOne<any>(
+        'SELECT MIN(rating) as min_rating, MAX(rating) as max_rating FROM reviews WHERE product_id = ?',
+        [parseInt(productIdParam)]
       );
-      if (avgResult.rows.length > 0) {
-        const rating = avgResult.rows[0];
-        // Get min/max từ reviews table
-        const minMaxResult = await pool.query(
-          'SELECT MIN(rating) as min_rating, MAX(rating) as max_rating FROM reviews WHERE product_id = $1',
-          [parseInt(productId)]
-        );
-        averageRating = {
-          average: parseFloat(rating.average_rating || '0'),
-          count: parseInt(rating.total_ratings || '0'),
-          min: minMaxResult.rows[0]?.min_rating ? parseInt(minMaxResult.rows[0].min_rating) : 0,
-          max: minMaxResult.rows[0]?.max_rating ? parseInt(minMaxResult.rows[0].max_rating) : 0
-        };
-      } else {
-        // Nếu chưa có rating, trả về default
-        averageRating = {
-          average: 0,
-          count: 0,
-          min: 0,
-          max: 0
-        };
-      }
+      
+      averageRating = {
+        average: ratingData.average_rating,
+        count: ratingData.total_ratings,
+        min: minMaxResult?.min_rating ? parseInt(minMaxResult.min_rating) : 0,
+        max: minMaxResult?.max_rating ? parseInt(minMaxResult.max_rating) : 0
+      };
     }
     
     return NextResponse.json({
       success: true,
-      reviews: result.rows,
+      reviews,
       averageRating,
       pagination: {
         limit,
         offset,
-        total: result.rows.length
+        total: reviews.length
       }
     });
   } catch (error: any) {

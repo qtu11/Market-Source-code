@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getProducts, createProduct } from '@/lib/database';
-import { verifyFirebaseToken, requireAdmin, validateRequest } from '@/lib/api-auth';
-import { checkRateLimitAndRespond } from '@/lib/rate-limit';
-import { productSchema } from '@/lib/validation-schemas';
-import { sanitizeError, createErrorResponse, logError } from '@/lib/error-handler';
+import { NextRequest, NextResponse } from 'next/server'
+import { getProducts, getProductByIdMySQL, withTransaction } from '@/lib/database-mysql'
+import { requireAdmin, validateRequest } from '@/lib/api-auth'
+import { checkRateLimitAndRespond } from '@/lib/rate-limit'
+import { productSchema } from '@/lib/validation-schemas'
+import { sanitizeError, createErrorResponse, logError } from '@/lib/error-handler'
 
 export const runtime = 'nodejs'
 
@@ -19,11 +19,11 @@ export async function GET(request: NextRequest) {
       return rateLimitResponse;
     }
 
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const isActive = searchParams.get('isActive');
-    const limit = searchParams.get('limit');
-    const offset = searchParams.get('offset');
+    const { searchParams } = new URL(request.url)
+    const category = searchParams.get('category')
+    const isActive = searchParams.get('isActive')
+    const limit = searchParams.get('limit')
+    const offset = searchParams.get('offset')
 
     const filters: {
       category?: string;
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const products = await getProducts(filters);
+    const products = await getProducts(filters)
 
     return NextResponse.json({
       success: true,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     // Require admin
     await requireAdmin(request);
 
-    const body = await request.json();
+    const body = await request.json()
 
     // Validate với Zod
     const validation = validateRequest(body, productSchema);
@@ -132,24 +132,41 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const productData = validation.data;
+    const productData = validation.data
 
-    // Create product
-    const result = await createProduct({
-      title: productData.title,
-      description: productData.description,
-      price: productData.price,
-      category: productData.category,
-      demoUrl: productData.demoUrl,
-      downloadUrl: productData.downloadUrl,
-      imageUrl: productData.imageUrl,
-      tags: productData.tags,
-      isActive: productData.isActive,
-    });
+    // Create product trên MySQL
+    const insertResult = await withTransaction(async (conn) => {
+      const [res]: any = await conn.query(
+        `INSERT INTO products (
+          title,
+          description,
+          price,
+          category,
+          demo_url,
+          download_url,
+          image_url,
+          tags,
+          is_active,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [
+          productData.title,
+          productData.description || null,
+          productData.price,
+          productData.category || null,
+          productData.demoUrl || null,
+          productData.downloadUrl || null,
+          productData.imageUrl || null,
+          productData.tags ? JSON.stringify(productData.tags) : null,
+          productData.isActive ? 1 : 0,
+        ],
+      )
+      return { id: (res as any).insertId }
+    })
 
     // Get created product để trả về đầy đủ
-    const { getProductById } = await import('@/lib/database');
-    const product = await getProductById(result.id);
+    const product = await getProductByIdMySQL(insertResult.id)
 
     return NextResponse.json({
       success: true,

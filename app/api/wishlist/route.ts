@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyFirebaseToken } from '@/lib/api-auth';
-import { getUserIdByEmail } from '@/lib/database';
+import { getUserIdByEmail } from '@/lib/database-mysql';
 import { addToWishlist, removeFromWishlist, getWishlist, isInWishlist } from '@/lib/database-enhancements';
 import { checkRateLimitAndRespond } from '@/lib/rate-limit';
 import { z } from 'zod';

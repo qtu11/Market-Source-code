@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, createOrUpdateUser } from '@/lib/database';
+import { getUserByEmail, createOrUpdateUser } from '@/lib/database-mysql';
 import { getClientIP } from '@/lib/api-auth';
 import bcrypt from 'bcryptjs';
 
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ FIX: Lấy user data đầy đủ từ database để trả về balance
-    const { getUserById } = await import('@/lib/database');
+    const { getUserById } = await import('@/lib/database-mysql');
     const fullUser = await getUserById(result.id);
     
     return NextResponse.json({
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
             });
             
             if (retryResult && retryResult.id) {
-              const { getUserById } = await import('@/lib/database');
+              const { getUserById } = await import('@/lib/database-mysql');
               const fullUser = await getUserById(retryResult.id);
               
               return NextResponse.json({

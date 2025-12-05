@@ -1,4 +1,4 @@
-import { pool } from '@/lib/database';
+import { query, queryOne } from '@/lib/database-mysql';
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 
@@ -19,21 +19,21 @@ export async function GET() {
     const startTime = Date.now();
     
     // Test connection với timeout
-    const result = await pool.query('SELECT NOW() as timestamp, version() as version');
+    const result = await queryOne<any>('SELECT NOW() as timestamp, VERSION() as version');
     
     const responseTime = Date.now() - startTime;
     
-    // Kiểm tra thêm số lượng bảng
-    const tableCount = await pool.query(
-      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'public'"
+    // Kiểm tra thêm số lượng bảng (MySQL)
+    const tableCount = await queryOne<any>(
+      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = DATABASE()"
     );
     
     return NextResponse.json({
       status: 'healthy',
       database: 'connected',
-      timestamp: result.rows[0].timestamp,
-      version: result.rows[0].version.split(' ')[0] + ' ' + result.rows[0].version.split(' ')[1],
-      tableCount: parseInt(tableCount.rows[0].count),
+      timestamp: result?.timestamp,
+      version: result?.version ? result.version.split(' ')[0] + ' ' + result.version.split(' ')[1] : 'MySQL',
+      tableCount: parseInt(tableCount?.count || '0'),
       responseTime: `${responseTime}ms`,
     }, {
       status: 200,

@@ -2,45 +2,33 @@ export const runtime = 'nodejs'
 
 // /app/api/check-tables/route.ts
 import { NextResponse } from "next/server";
-import { Pool } from "pg";
+import { query, queryOne } from "@/lib/database-mysql";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 export async function GET() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // Đồng bộ cấu hình SSL với lib/database.ts
-    ssl: process.env.DB_SSL === 'disable'
-      ? undefined
-      : {
-          rejectUnauthorized: false,
-        },
-  });
-
   try {
-    const client = await pool.connect();
-
-    // Kiểm tra bảng users (PostgreSQL syntax)
-    const usersTableResult = await client.query(`
+    // Kiểm tra bảng users (MySQL syntax)
+    const usersTableResult = await queryOne<any>(`
       SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = DATABASE() 
         AND table_name = 'users'
-      );
+      ) as exists_table;
     `);
-    const usersExists = usersTableResult.rows[0].exists;
+    const usersExists = usersTableResult?.exists_table === 1 || usersTableResult?.exists_table === true;
 
     // Kiểm tra bảng notifications
-    const notificationsTableResult = await client.query(`
+    const notificationsTableResult = await queryOne<any>(`
       SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = DATABASE() 
         AND table_name = 'notifications'
-      );
+      ) as exists_table;
     `);
-    const notificationsExists = notificationsTableResult.rows[0].exists;
+    const notificationsExists = notificationsTableResult?.exists_table === 1 || notificationsTableResult?.exists_table === true;
 
     let result = {
       users: { exists: usersExists, structure: null as any },
@@ -48,13 +36,13 @@ export async function GET() {
     };
 
     if (usersExists) {
-      const usersColumnsResult = await client.query(`
+      const usersColumnsResult = await query<any>(`
         SELECT column_name, data_type, is_nullable, column_default
         FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'users'
+        WHERE table_schema = DATABASE() AND table_name = 'users'
         ORDER BY ordinal_position;
       `);
-      result.users.structure = usersColumnsResult.rows;
+      result.users.structure = usersColumnsResult;
     } else {
       // Không tự động tạo bảng - dùng create-tables.sql thay vì
       result.users.exists = false;
@@ -62,23 +50,20 @@ export async function GET() {
     }
 
     if (notificationsExists) {
-      const notificationsColumnsResult = await client.query(`
+      const notificationsColumnsResult = await query<any>(`
         SELECT column_name, data_type, is_nullable, column_default
         FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'notifications'
+        WHERE table_schema = DATABASE() AND table_name = 'notifications'
         ORDER BY ordinal_position;
       `);
-      result.notifications.structure = notificationsColumnsResult.rows;
+      result.notifications.structure = notificationsColumnsResult;
     } else {
       result.notifications.exists = false;
       result.notifications.structure = null;
     }
 
-    client.release();
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
-  } finally {
-    await pool.end();
   }
 }

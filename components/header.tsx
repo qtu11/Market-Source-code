@@ -134,7 +134,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 glass-card animate-fade-in-down">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 liquid-glass animate-fade-in-down">
       <div className="container flex h-16 items-center justify-between smooth-transition">
         <div className="flex items-center space-x-4">
           <Logo />
@@ -211,6 +211,14 @@ export function Header() {
                     <span>Dashboard</span>
                   </Link>
                 </DropdownMenuItem>
+                {user?.role === "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Admin control</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link href="/deposit" className="cursor-pointer">
                     <Wallet className="mr-2 h-4 w-4" />

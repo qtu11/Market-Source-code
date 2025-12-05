@@ -2,7 +2,7 @@ export const runtime = 'nodejs'
 
 // /app/api/save-notification/route.ts
 import { NextResponse } from "next/server";
-import { createNotification } from "@/lib/database";
+import { createNotification } from "@/lib/database-mysql";
 import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       userId = notificationData.user_id;
     } else {
       // Nếu là string (Firebase UID), cần convert sang DB ID
-      const { getUserIdByEmail } = await import('@/lib/database');
+      const { getUserIdByEmail } = await import('@/lib/database-mysql');
       const normalizedUserId = await getUserIdByEmail(notificationData.userEmail || '');
       if (!normalizedUserId) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });

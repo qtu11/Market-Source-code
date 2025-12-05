@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProductById, updateProduct, deleteProduct } from '@/lib/database';
+import { getProductById, updateProduct, deleteProduct } from '@/lib/database-mysql';
 import { verifyFirebaseToken, requireAdmin, validateRequest } from '@/lib/api-auth';
 import { checkRateLimitAndRespond } from '@/lib/rate-limit';
 import { updateProductSchema } from '@/lib/validation-schemas';

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyFirebaseToken } from "@/lib/api-auth"
-import { getUserIdByEmail } from "@/lib/database"
-import { pool } from "@/lib/database"
+import { getUserIdByEmail, query, queryOne } from "@/lib/database-mysql"
 
 export const runtime = 'nodejs'
 
@@ -32,15 +31,19 @@ export async function PUT(
     const { is_read } = body
 
     // Update notification
-    const result = await pool.query(
+    await query(
       `UPDATE notifications 
-       SET is_read = $1, updated_at = NOW()
-       WHERE id = $2 AND user_id = $3
-       RETURNING *`,
-      [is_read, routeParams.id, userId]
+       SET is_read = ?, updated_at = NOW()
+       WHERE id = ? AND user_id = ?`,
+      [is_read ? 1 : 0, routeParams.id, userId]
     )
 
-    if (result.rows.length === 0) {
+    const notification = await queryOne<any>(
+      "SELECT * FROM notifications WHERE id = ? AND user_id = ?",
+      [routeParams.id, userId]
+    )
+
+    if (!notification) {
       return NextResponse.json(
         { error: 'Notification not found' },
         { status: 404 }
@@ -49,7 +52,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      notification: result.rows[0]
+      notification
     })
   } catch (error: any) {
     const { logger } = await import('@/lib/logger')
@@ -85,15 +88,19 @@ export async function DELETE(
     }
 
     // Soft delete notification
-    const result = await pool.query(
+    await query(
       `UPDATE notifications 
        SET deleted_at = NOW()
-       WHERE id = $1 AND user_id = $2
-       RETURNING *`,
+       WHERE id = ? AND user_id = ?`,
       [routeParams.id, userId]
     )
 
-    if (result.rows.length === 0) {
+    const notification = await queryOne<any>(
+      "SELECT * FROM notifications WHERE id = ? AND user_id = ?",
+      [routeParams.id, userId]
+    )
+
+    if (!notification) {
       return NextResponse.json(
         { error: 'Notification not found' },
         { status: 404 }

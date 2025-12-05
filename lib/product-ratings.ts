@@ -3,7 +3,7 @@
  * Quản lý ratings cho products
  */
 
-import { pool } from './database';
+import { query as mysqlQuery } from './database-mysql';
 import { logger } from './logger';
 
 /**
@@ -11,12 +11,12 @@ import { logger } from './logger';
  */
 export async function getProductRating(productId: number) {
   try {
-    const result = await pool.query(
-      'SELECT * FROM product_ratings WHERE product_id = $1',
+    const rows = await mysqlQuery<any>(
+      'SELECT * FROM product_ratings WHERE product_id = ?',
       [productId]
     );
     
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       // Nếu chưa có rating, trả về default
       return {
         product_id: productId,
@@ -26,11 +26,12 @@ export async function getProductRating(productId: number) {
       };
     }
     
+    const row = rows[0];
     return {
-      product_id: result.rows[0].product_id,
-      average_rating: parseFloat(result.rows[0].average_rating || '0'),
-      total_ratings: parseInt(result.rows[0].total_ratings || '0'),
-      updated_at: result.rows[0].updated_at,
+      product_id: row.product_id,
+      average_rating: parseFloat(row.average_rating ?? '0'),
+      total_ratings: parseInt(row.total_ratings ?? '0'),
+      updated_at: row.updated_at,
     };
   } catch (error) {
     logger.error('Error getting product rating:', error);
@@ -47,19 +48,20 @@ export async function getProductRatings(productIds: number[]) {
       return [];
     }
     
-    const result = await pool.query(
-      'SELECT * FROM product_ratings WHERE product_id = ANY($1::int[])',
+    // MySQL: dùng IN (?) với mảng id
+    const rows = await mysqlQuery<any>(
+      'SELECT * FROM product_ratings WHERE product_id IN (?)',
       [productIds]
     );
     
     // Map để đảm bảo tất cả products đều có rating (default 0 nếu chưa có)
     const ratingsMap = new Map(
-      result.rows.map((row: any) => [
+      rows.map((row: any) => [
         row.product_id,
         {
           product_id: row.product_id,
-          average_rating: parseFloat(row.average_rating || '0'),
-          total_ratings: parseInt(row.total_ratings || '0'),
+          average_rating: parseFloat(row.average_rating ?? '0'),
+          total_ratings: parseInt(row.total_ratings ?? '0'),
           updated_at: row.updated_at,
         },
       ])
@@ -89,7 +91,7 @@ export async function getProductRatings(productIds: number[]) {
  */
 export async function getTopRatedProducts(limit: number = 10) {
   try {
-    const result = await pool.query(
+    const rows = await mysqlQuery<any>(
       `SELECT 
         pr.*,
         p.title,
@@ -99,18 +101,18 @@ export async function getTopRatedProducts(limit: number = 10) {
         p.category
        FROM product_ratings pr
        JOIN products p ON pr.product_id = p.id
-       WHERE pr.total_ratings > 0 AND p.is_active = true
+       WHERE pr.total_ratings > 0 AND p.is_active = 1
        ORDER BY pr.average_rating DESC, pr.total_ratings DESC
-       LIMIT $1`,
+       LIMIT ?`,
       [limit]
     );
     
-    return result.rows.map((row: any) => ({
+    return rows.map((row: any) => ({
       product_id: row.product_id,
-      average_rating: parseFloat(row.average_rating || '0'),
-      total_ratings: parseInt(row.total_ratings || '0'),
+      average_rating: parseFloat(row.average_rating ?? '0'),
+      total_ratings: parseInt(row.total_ratings ?? '0'),
       title: row.title,
-      price: parseFloat(row.price || '0'),
+      price: parseFloat(row.price ?? '0'),
       thumbnail: row.thumbnail || row.image_url,
       category: row.category,
       updated_at: row.updated_at,
@@ -126,21 +128,20 @@ export async function getTopRatedProducts(limit: number = 10) {
  */
 export async function recalculateProductRating(productId: number) {
   try {
-    await pool.query(
+    await mysqlQuery(
       `INSERT INTO product_ratings (product_id, average_rating, total_ratings, updated_at)
        SELECT 
          product_id,
-         ROUND(AVG(rating)::numeric, 2) as average_rating,
+         ROUND(AVG(rating), 2) as average_rating,
          COUNT(*) as total_ratings,
-         CURRENT_TIMESTAMP
+         NOW()
        FROM reviews
-       WHERE product_id = $1
+       WHERE product_id = ?
        GROUP BY product_id
-       ON CONFLICT (product_id) 
-       DO UPDATE SET
-         average_rating = EXCLUDED.average_rating,
-         total_ratings = EXCLUDED.total_ratings,
-         updated_at = EXCLUDED.updated_at`,
+       ON DUPLICATE KEY UPDATE
+         average_rating = VALUES(average_rating),
+         total_ratings = VALUES(total_ratings),
+         updated_at = VALUES(updated_at)`,
       [productId]
     );
     
@@ -156,7 +157,7 @@ export async function recalculateProductRating(productId: number) {
  */
 export async function getRatingStatistics() {
   try {
-    const result = await pool.query(
+    const rows = await mysqlQuery<any>(
       `SELECT 
         COUNT(*) as total_products_with_ratings,
         AVG(average_rating) as overall_average_rating,
@@ -167,7 +168,7 @@ export async function getRatingStatistics() {
        WHERE total_ratings > 0`
     );
     
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return {
         total_products_with_ratings: 0,
         overall_average_rating: 0,
@@ -177,13 +178,13 @@ export async function getRatingStatistics() {
       };
     }
     
-    const row = result.rows[0];
+    const row = rows[0];
     return {
-      total_products_with_ratings: parseInt(row.total_products_with_ratings || '0'),
-      overall_average_rating: parseFloat(row.overall_average_rating || '0'),
-      total_reviews: parseInt(row.total_reviews || '0'),
-      highest_rating: parseFloat(row.highest_rating || '0'),
-      lowest_rating: parseFloat(row.lowest_rating || '0'),
+      total_products_with_ratings: parseInt(row.total_products_with_ratings ?? '0'),
+      overall_average_rating: parseFloat(row.overall_average_rating ?? '0'),
+      total_reviews: parseInt(row.total_reviews ?? '0'),
+      highest_rating: parseFloat(row.highest_rating ?? '0'),
+      lowest_rating: parseFloat(row.lowest_rating ?? '0'),
     };
   } catch (error) {
     logger.error('Error getting rating statistics:', error);

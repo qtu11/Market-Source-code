@@ -734,6 +734,9 @@ function AdminPageContent() {
       saveDeposit(approvedDeposit);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('depositsChange', { detail: [...getDeposits().filter((d: any) => d.id !== deposit.id), approvedDeposit] }));
+        // ✅ FIX: Dispatch events theo báo cáo để dashboard tự động refresh
+        window.dispatchEvent(new CustomEvent('depositsUpdated'));
+        window.dispatchEvent(new CustomEvent('userUpdated'));
       }
 
       // Send Telegram notification
@@ -967,6 +970,9 @@ function AdminPageContent() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('withdrawals', JSON.stringify(updatedWithdrawals));
         window.dispatchEvent(new CustomEvent('withdrawalsChange', { detail: updatedWithdrawals }));
+        // ✅ FIX: Dispatch events theo báo cáo để dashboard tự động refresh
+        window.dispatchEvent(new CustomEvent('withdrawalsUpdated'));
+        window.dispatchEvent(new CustomEvent('userUpdated'));
       }
 
       // Send Telegram notification for withdrawal approval
@@ -1745,201 +1751,398 @@ Hệ thống thông báo đang hoạt động bình thường.`
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* 3D Background */}
-      <div className="absolute inset-0">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-foreground relative">
+      {/* 3D Liquid Background */}
+      <div className="liquid-3d-bg" />
+      {/* 3D background nhẹ phía sau */}
+      <div className="pointer-events-none absolute inset-0 opacity-30 z-0">
         <ThreeJSAdmin />
         <ThreeDFallback />
       </div>
       
-      <div className="border-b relative z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+      <div className="relative z-10 flex min-h-screen">
+        {/* Sidebar trái */}
+        <aside className="hidden md:flex w-64 flex-col border-r border-white/5 bg-slate-950/70 backdrop-blur-xl px-4 py-6 liquid-glass">
+          <div className="flex items-center gap-3 px-2">
               <Logo />
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
-                <p className="text-sm text-muted-foreground">
-                  Chào mừng, {adminUser.name}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge className="bg-green-100 text-green-800">
-                <Shield className="w-3 h-3 mr-1" />
-                Admin
-              </Badge>
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Đăng xuất
-              </Button>
-            </div>
-          </div>
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-slate-100">Healthy Admin</p>
+              <p className="text-[11px] text-slate-400">Control center</p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {/* Primary Navigation Tabs - Main Features */}
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 p-2 shadow-sm">
-            <TabsList className="grid grid-cols-7 gap-2 h-auto bg-transparent">
-              <TabsTrigger 
-                value="overview" 
-                className="flex items-center justify-center gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+          <div className="mt-6 space-y-4 text-xs font-medium text-slate-400">
+            <p className="px-2 uppercase tracking-[0.16em]">Tổng quan</p>
+            <nav className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab("overview")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "overview"
+                    ? "bg-sky-500 text-white shadow-md shadow-sky-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <LayoutDashboard className="w-4 h-4" />
-                <span className="hidden sm:inline">Tổng quan</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="analytics"
-                className="flex items-center justify-center gap-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                <LayoutDashboard className="h-4 w-4" />
+                <span>Tổng quan</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("analytics")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "analytics"
+                    ? "bg-violet-500 text-white shadow-md shadow-violet-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Analytics</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="products"
-                className="flex items-center justify-center gap-2 data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                <BarChart3 className="h-4 w-4" />
+                <span>Analytics</span>
+              </button>
+            </nav>
+
+            <p className="mt-3 px-2 uppercase tracking-[0.16em]">Quản lí</p>
+            <nav className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab("products")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "products"
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Package className="w-4 h-4" />
-                <span className="hidden sm:inline">Sản phẩm</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="users"
-                className="flex items-center justify-center gap-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all relative"
+                <Package className="h-4 w-4" />
+                <span>Sản phẩm</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("users")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "users"
+                    ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Người dùng</span>
+                <Users className="h-4 w-4" />
+                <span>Người dùng</span>
                 {stats.newUsersCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center shadow-md">
+                  <span className="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-sky-500 px-1.5 text-[10px] font-semibold text-white">
                     {stats.newUsersCount}
-                  </Badge>
+                  </span>
                 )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="deposits"
-                className="flex items-center justify-center gap-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all relative"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("deposits")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "deposits"
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Wallet className="w-4 h-4" />
-                <span className="hidden sm:inline">Nạp tiền</span>
+                <Wallet className="h-4 w-4" />
+                <span>Nạp tiền</span>
                 {stats.pendingDepositsCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center shadow-md">
+                  <span className="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">
                     {stats.pendingDepositsCount}
-                  </Badge>
+                  </span>
                 )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="withdrawals"
-                className="flex items-center justify-center gap-2 data-[state=active]:bg-orange-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all relative"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("withdrawals")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "withdrawals"
+                    ? "bg-orange-500 text-white shadow-md shadow-orange-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <ArrowDownUp className="w-4 h-4" />
-                <span className="hidden sm:inline">Rút tiền</span>
+                <ArrowDownUp className="h-4 w-4" />
+                <span>Rút tiền</span>
                 {stats.pendingWithdrawalsCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1.5 py-0 h-4 min-w-4 flex items-center justify-center shadow-md">
+                  <span className="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">
                     {stats.pendingWithdrawalsCount}
-                  </Badge>
+                  </span>
                 )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="transactions"
-                className="flex items-center justify-center gap-2 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("transactions")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "transactions"
+                    ? "bg-teal-500 text-white shadow-md shadow-teal-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Receipt className="w-4 h-4" />
-                <span className="hidden sm:inline">Giao dịch</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+                <Receipt className="h-4 w-4" />
+                <span>Giao dịch</span>
+              </button>
+            </nav>
 
-          {/* Secondary Navigation Tabs - Management & Settings */}
-          <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 p-2 shadow-sm">
-            <TabsList className="grid grid-cols-5 sm:grid-cols-10 gap-2 h-auto bg-transparent">
-              <TabsTrigger 
-                value="reviews"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            <p className="mt-3 px-2 uppercase tracking-[0.16em]">Hỗ trợ</p>
+            <nav className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab("reviews")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "reviews"
+                    ? "bg-yellow-500 text-slate-950 shadow-md shadow-yellow-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Star className="w-3.5 h-3.5" />
+                <Star className="h-4 w-4" />
                 <span>Đánh giá</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="chat"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("chat")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "chat"
+                    ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <MessageSquare className="w-3.5 h-3.5" />
+                <MessageSquare className="h-4 w-4" />
                 <span>Chat</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="support"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-pink-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("support")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "support"
+                    ? "bg-pink-500 text-white shadow-md shadow-pink-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Headphones className="w-3.5 h-3.5" />
+                <Headphones className="h-4 w-4" />
                 <span>Hỗ trợ</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="notifications"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-red-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("notifications")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "notifications"
+                    ? "bg-red-500 text-white shadow-md shadow-red-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Bell className="w-3.5 h-3.5" />
+                <Bell className="h-4 w-4" />
                 <span>Thông báo</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="settings"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-gray-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("settings")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "settings"
+                    ? "bg-slate-700 text-white shadow-md shadow-slate-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Settings className="w-3.5 h-3.5" />
+                <Settings className="h-4 w-4" />
                 <span>Cài đặt</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="announcements"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-violet-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+            </nav>
+
+            <p className="mt-3 px-2 uppercase tracking-[0.16em]">Hệ thống</p>
+            <nav className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab("announcements")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "announcements"
+                    ? "bg-violet-500 text-white shadow-md shadow-violet-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Megaphone className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Thông báo hệ thống</span>
-                <span className="sm:hidden">TB hệ thống</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="faq"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                <Megaphone className="h-4 w-4" />
+                <span>Thông báo hệ thống</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("faq")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "faq"
+                    ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <HelpCircle className="w-3.5 h-3.5" />
+                <HelpCircle className="h-4 w-4" />
                 <span>FAQ</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="audit"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("audit")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "audit"
+                    ? "bg-slate-600 text-white shadow-md shadow-slate-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="h-4 w-4" />
                 <span>Audit</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="promotions"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-rose-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("promotions")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "promotions"
+                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Gift className="w-3.5 h-3.5" />
+                <Gift className="h-4 w-4" />
                 <span>Khuyến mãi</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="reports"
-                className="flex items-center justify-center gap-1.5 text-xs data-[state=active]:bg-sky-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("reports")}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "reports"
+                    ? "bg-sky-500 text-white shadow-md shadow-sky-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <FileBarChart className="w-3.5 h-3.5" />
+                <FileBarChart className="h-4 w-4" />
                 <span>Báo cáo</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          {/* Backup Tab - Separate */}
-          <div className="flex justify-end">
-            <TabsList className="bg-transparent">
-              <TabsTrigger 
-                value="backup"
-                className="flex items-center justify-center gap-2 text-sm data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("backup")}
+                className={`mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  activeTab === "backup"
+                    ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/30"
+                    : "text-slate-300 hover:bg-slate-800/80"
+                }`}
               >
-                <Database className="w-4 h-4" />
-                <span>Backup & Restore</span>
-              </TabsTrigger>
-            </TabsList>
+                <Database className="h-4 w-4" />
+                <span>Backup &amp; Restore</span>
+              </button>
+            </nav>
+
           </div>
 
+          <div className="mt-auto flex items-center justify-between gap-2 rounded-xl border border-slate-700/80 bg-slate-900/90 px-3 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-500/20">
+                <Shield className="h-5 w-5 text-sky-400" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-slate-100">Chế độ bảo mật cao</p>
+                <p className="text-[11px] text-slate-400">Mọi thao tác đều được ghi log.</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-800"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className="flex-1">
+          {/* Header */}
+          <header className="border-b border-white/5 bg-slate-950/70 backdrop-blur-xl">
+            <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+              <div className="flex items-center gap-3">
+                <div className="md:hidden">
+                  <Logo />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-sky-400">
+                    Admin control
+                  </p>
+                  <h1 className="text-xl font-semibold text-slate-50">
+                    Xin chào, {adminUser.name}
+                  </h1>
+                  <p className="text-xs text-slate-400">
+                    Quản lí người dùng, giao dịch và hệ thống trong một màn hình.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/40">
+                  <Shield className="mr-1 h-3 w-3" />
+                  Admin
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Đăng xuất
+                </Button>
+              </div>
+            </div>
+
+            {/* Hàng thẻ thống kê nhanh */}
+            <div className="mx-auto max-w-6xl px-4 pb-4">
+              <div className="grid gap-3 md:grid-cols-4">
+                <Card className="liquid-glass-card border-slate-800 bg-slate-950/80 text-slate-100">
+                  <CardHeader className="pb-2">
+                    <CardDescription className="text-xs text-slate-400">
+                      Doanh thu tổng
+                    </CardDescription>
+                    <CardTitle className="text-lg">
+                      {stats.totalRevenue.toLocaleString("vi-VN")}đ
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-between pt-0 text-xs text-slate-400">
+                    <span>{stats.totalPurchases} giao dịch</span>
+                  </CardContent>
+                </Card>
+                <Card className="liquid-glass-card border-slate-800 bg-slate-950/80 text-slate-100">
+                  <CardHeader className="pb-2">
+                    <CardDescription className="text-xs text-slate-400">
+                      Người dùng
+                    </CardDescription>
+                    <CardTitle className="text-lg">
+                      {stats.totalUsers.toLocaleString("vi-VN")}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-between pt-0 text-xs text-slate-400">
+                    <span>{stats.newUsersCount} mới / 7 ngày</span>
+                  </CardContent>
+                </Card>
+                <Card className="liquid-glass-card border-slate-800 bg-slate-950/80 text-slate-100">
+                  <CardHeader className="pb-2">
+                    <CardDescription className="text-xs text-slate-400">
+                      Nạp &amp; rút đang chờ
+                    </CardDescription>
+                    <CardTitle className="text-lg">
+                      {stats.pendingDepositsCount + stats.pendingWithdrawalsCount}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-between pt-0 text-xs text-slate-400">
+                    <span>{stats.pendingDepositsCount} nạp</span>
+                    <span>{stats.pendingWithdrawalsCount} rút</span>
+                  </CardContent>
+                </Card>
+                <Card className="liquid-glass-card border-slate-800 bg-slate-950/80 text-slate-100">
+                  <CardHeader className="pb-2">
+                    <CardDescription className="text-xs text-slate-400">
+                      Sản phẩm
+                    </CardDescription>
+                    <CardTitle className="text-lg">
+                      {stats.totalProducts.toLocaleString("vi-VN")}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex items-center justify-between pt-0 text-xs text-slate-400">
+                    <span>Quản lí toàn bộ catalog</span>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </header>
+
+          {/* Nội dung chính theo tab */}
+          <section className="mx-auto max-w-6xl px-4 py-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsContent value="overview">
             <Overview 
               stats={stats}
@@ -2148,6 +2351,8 @@ Hệ thống thông báo đang hoạt động bình thường.`
             />
           </TabsContent>
         </Tabs>
+          </section>
+        </main>
       </div>
     </div>
   )

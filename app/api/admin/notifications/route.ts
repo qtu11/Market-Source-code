@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/api-auth"
-import { pool } from "@/lib/database"
+import { query } from "@/lib/database-mysql"
 
 export const runtime = 'nodejs'
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type')
     const isRead = searchParams.get('isRead')
 
-    let query = `
+    let sql = `
       SELECT 
         n.*,
         u.email as user_email,
@@ -27,33 +27,29 @@ export async function GET(request: NextRequest) {
       WHERE n.deleted_at IS NULL
     `
     const params: any[] = []
-    let paramIndex = 1
 
     if (userId) {
-      query += ` AND n.user_id = $${paramIndex}`
+      sql += ` AND n.user_id = ?`
       params.push(parseInt(userId))
-      paramIndex++
     }
 
     if (type) {
-      query += ` AND n.type = $${paramIndex}`
+      sql += ` AND n.type = ?`
       params.push(type)
-      paramIndex++
     }
 
     if (isRead !== null) {
-      query += ` AND n.is_read = $${paramIndex}`
-      params.push(isRead === 'true')
-      paramIndex++
+      sql += ` AND n.is_read = ?`
+      params.push(isRead === 'true' ? 1 : 0)
     }
 
-    query += ` ORDER BY n.created_at DESC LIMIT 1000`
+    sql += ` ORDER BY n.created_at DESC LIMIT 1000`
 
-    const result = await pool.query(query, params)
+    const rows = await query<any>(sql, params)
 
     return NextResponse.json({
       success: true,
-      notifications: result.rows
+      notifications: rows
     })
   } catch (error: any) {
     const { logger } = await import('@/lib/logger')

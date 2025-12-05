@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { pool } from '@/lib/database'
+import { query } from '@/lib/database-mysql'
 import { logger } from '@/lib/logger'
 import { requireAdmin } from '@/lib/api-auth'
 import { checkRateLimitAndRespond } from '@/lib/rate-limit'
@@ -18,10 +18,9 @@ export async function GET(request: NextRequest) {
 
     await requireAdmin(request)
 
-    const result = await pool.query(`
+    const rows = await query<any>(`
       SELECT 
         id,
-        uid,
         email,
         name,
         username,
@@ -31,7 +30,7 @@ export async function GET(request: NextRequest) {
         last_login,
         created_at,
         updated_at,
-        last_active_ip,
+        ip_address as last_active_ip,
         provider,
         login_count
       FROM users
@@ -39,7 +38,7 @@ export async function GET(request: NextRequest) {
       LIMIT 500
     `)
 
-    const users = result.rows.map((user) => ({
+    const users = rows.map((user) => ({
       ...user,
       avatarUrl: user.avatar_url,
       lastActivity: user.last_login,

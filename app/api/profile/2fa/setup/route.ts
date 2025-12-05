@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getUserByEmail } from "@/lib/database"
+import { getUserByEmail } from "@/lib/database-mysql"
 import { generateTwoFactorSecret, generateQRCodeData } from "@/lib/twofactor"
 import { logger } from "@/lib/logger"
 

@@ -3,9 +3,9 @@ import {
   approveDepositAndUpdateBalance,
   updateDepositStatus,
   getUserById,
-  normalizeUserId,
+  normalizeUserIdMySQL as normalizeUserId,
   getUserIdByEmail,
-} from "@/lib/database"
+} from "@/lib/database-mysql"
 import { requireAdmin, validateRequest } from "@/lib/api-auth"
 import { userManager } from "@/lib/userManager"
 
@@ -57,21 +57,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'approve') {
-      // ✅ FIX: Query trực tiếp deposit với lock để tránh race condition
-      const { pool } = await import('@/lib/database');
-      const depositResult = await pool.query(
-        'SELECT id, user_id, amount, status FROM deposits WHERE id = $1 FOR UPDATE',
+      // ✅ FIX: Query deposit để validate (không cần FOR UPDATE vì approveDepositAndUpdateBalanceMySQL đã có transaction)
+      const { queryOne } = await import('@/lib/database-mysql');
+      const deposit = await queryOne<any>(
+        'SELECT id, user_id, amount, status FROM deposits WHERE id = ?',
         [depositId]
       );
       
-      if (depositResult.rows.length === 0) {
+      if (!deposit) {
         return NextResponse.json(
           { success: false, error: 'Deposit not found' },
           { status: 404 }
         );
       }
-
-      const deposit = depositResult.rows[0];
 
       // ✅ FIX: Validate deposit status
       if (deposit.status === 'approved') {
@@ -138,9 +136,47 @@ export async function POST(request: NextRequest) {
           logger.warn('userManager sync failed (non-critical)', { error: syncError, userId });
         }
       }
+
+      // ✅ FIX: Tạo notification cho user khi deposit được approve
+      try {
+        const { createNotification } = await import('@/lib/database-mysql');
+        await createNotification({
+          userId: dbUserId,
+          type: 'deposit_approved',
+          message: `Yêu cầu nạp tiền ${amount.toLocaleString('vi-VN')}đ đã được duyệt. Số dư hiện tại: ${result.newBalance.toLocaleString('vi-VN')}đ`,
+          isRead: false,
+        });
+      } catch (notifError) {
+        const { logger } = await import('@/lib/logger');
+        logger.warn('Failed to create notification (non-critical)', { error: notifError, userId: dbUserId });
+      }
     } else if (action === 'reject') {
+      // Normalize userId cho reject action
+      const dbUserIdForReject = await normalizeUserId(userId, userEmail);
+      
+      if (!dbUserIdForReject) {
+        return NextResponse.json(
+          { success: false, error: 'Cannot resolve user ID. User may not exist in database.' },
+          { status: 400 }
+        );
+      }
+      
       // Update deposit status to rejected
       await updateDepositStatus(parseInt(depositId), 'rejected');
+      
+      // ✅ FIX: Tạo notification cho user khi deposit bị reject
+      try {
+        const { createNotification } = await import('@/lib/database-mysql');
+        await createNotification({
+          userId: dbUserIdForReject,
+          type: 'deposit_rejected',
+          message: `Yêu cầu nạp tiền ${amount.toLocaleString('vi-VN')}đ đã bị từ chối. Vui lòng liên hệ admin để biết thêm chi tiết.`,
+          isRead: false,
+        });
+      } catch (notifError) {
+        const { logger } = await import('@/lib/logger');
+        logger.warn('Failed to create notification (non-critical)', { error: notifError, userId: dbUserIdForReject });
+      }
     }
 
     // Send notification

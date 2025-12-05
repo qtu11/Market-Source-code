@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getWithdrawals, createWithdrawal, updateWithdrawalStatus } from '@/lib/database';
-import { verifyFirebaseToken, requireAdmin, validateRequest } from '@/lib/api-auth';
-import { checkRateLimitAndRespond } from '@/lib/rate-limit';
-import { withdrawalSchema, updateWithdrawalStatusSchema } from '@/lib/validation-schemas';
-import { notifyWithdrawalRequest } from '@/lib/server-notifications';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from 'next/server'
+import { getWithdrawals, createWithdrawal, updateWithdrawalStatus } from '@/lib/database-mysql'
+import { verifyFirebaseToken, requireAdmin, validateRequest } from '@/lib/api-auth'
+import { checkRateLimitAndRespond } from '@/lib/rate-limit'
+import { withdrawalSchema, updateWithdrawalStatusSchema } from '@/lib/validation-schemas'
+import { notifyWithdrawalRequest } from '@/lib/server-notifications'
+import { logger } from '@/lib/logger'
+import { getUserIdByEmail, getUserByIdMySQL, queryOne } from '@/lib/database-mysql'
 
 export const runtime = 'nodejs'
 
@@ -33,7 +34,6 @@ export async function GET(request: NextRequest): Promise<Response> {
     // Nếu có userId param và không phải admin → verify chính là user đó
     // ✅ FIX: So sánh đúng cách - cần convert userId từ DB sang uid hoặc ngược lại
     if (userId && authUser && !isAdmin) {
-      const { getUserIdByEmail } = await import('@/lib/database');
       const dbUserId = await getUserIdByEmail(authUser.email || '');
       const userIdNum = parseInt(userId);
       
@@ -50,7 +50,6 @@ export async function GET(request: NextRequest): Promise<Response> {
     if (userId) {
       if (isNaN(parseInt(userId))) {
         // userId là string (uid), cần tìm DB ID
-        const { getUserIdByEmail } = await import('@/lib/database');
         dbUserId = await getUserIdByEmail(authUser?.email || '') || undefined;
       } else {
         dbUserId = parseInt(userId);
@@ -103,8 +102,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       const withdrawalUserIdStr = withdrawalData.userId.toString();
       // Nếu là number (DB ID), cần check bằng email
       if (!isNaN(Number(withdrawalData.userId))) {
-        const { getUserById } = await import('@/lib/database');
-        const user = await getUserById(Number(withdrawalData.userId));
+        const user = await getUserByIdMySQL(Number(withdrawalData.userId));
         if (user && user.email !== authUser.email) {
           return NextResponse.json({
             success: false,
@@ -134,13 +132,12 @@ export async function POST(request: NextRequest): Promise<Response> {
     
     // Get the created withdrawal để trả về đầy đủ thông tin
     // ✅ FIX: Query chỉ withdrawal vừa tạo thay vì query tất cả
-    const { pool } = await import('@/lib/database');
-    const withdrawalResult = await pool.query(
+    const withdrawalRow = await queryOne<any>(
       `SELECT w.*, u.email, u.username
        FROM withdrawals w
        LEFT JOIN users u ON w.user_id = u.id
-       WHERE w.id = $1`,
-      [result.id]
+       WHERE w.id = ?`,
+      [result.id],
     );
     
     notifyWithdrawalRequest({
@@ -159,7 +156,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({
       success: true,
       message: 'Withdrawal request received',
-      withdrawal: withdrawalResult.rows[0] || {
+        withdrawal: withdrawalRow || {
         id: result.id,
         created_at: result.createdAt
       },

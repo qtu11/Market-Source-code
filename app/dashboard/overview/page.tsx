@@ -1224,6 +1224,50 @@ export default function DashboardPage() {
     setLocalStorage(`securityPrefs_${currentUser.uid}`, securityPreferences)
   }, [securityPreferences, currentUser?.uid])
 
+  // ✅ FIX: Refresh user balance immediately when deposits/withdrawals are updated
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const refreshUserBalance = async () => {
+      if (!currentUser?.uid) return;
+      try {
+        const { userManager } = await import('@/lib/userManager');
+        const syncedUserData = await userManager.getUserData(currentUser.uid as string);
+        
+        if (syncedUserData) {
+          setCurrentUser((prev) => ({
+            ...prev!,
+            balance: syncedUserData.balance ?? prev?.balance ?? 0,
+          }));
+        }
+      } catch (error) {
+        logger.error('Error refreshing user balance', error);
+      }
+    };
+
+    const handleDepositsUpdated = () => {
+      refreshUserBalance();
+    };
+
+    const handleWithdrawalsUpdated = () => {
+      refreshUserBalance();
+    };
+
+    const handleUserUpdated = () => {
+      refreshUserBalance();
+    };
+
+    window.addEventListener('depositsUpdated', handleDepositsUpdated);
+    window.addEventListener('withdrawalsUpdated', handleWithdrawalsUpdated);
+    window.addEventListener('userUpdated', handleUserUpdated);
+
+    return () => {
+      window.removeEventListener('depositsUpdated', handleDepositsUpdated);
+      window.removeEventListener('withdrawalsUpdated', handleWithdrawalsUpdated);
+      window.removeEventListener('userUpdated', handleUserUpdated);
+    };
+  }, [currentUser?.uid]);
+
   // ✅ FIX: Set up real-time updates với tối ưu hiệu năng
   useEffect(() => {
     if (!currentUser?.email) return;
@@ -1584,6 +1628,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background relative">
+      {/* 3D Liquid Background */}
+      <div className="liquid-3d-bg" />
       {/* 3D Background */}
       <div className="absolute inset-0">
         <ThreeJSBackground />
@@ -1619,7 +1665,7 @@ export default function DashboardPage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 animate-fade-in-up">
-            <Card className="transition-transform hover:scale-105 bg-white/60  dark:bg-black/50">
+            <Card className="liquid-glass-card transition-transform hover:scale-105">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 ">
                 <CardTitle className="text-sm font-medium">Số dư hiện tại</CardTitle>
                 <Wallet className="h-4 w-4 text-muted-foreground" />
@@ -1634,7 +1680,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="transition-transform hover:scale-105 bg-white/60  dark:bg-black/50">
+            <Card className="liquid-glass-card transition-transform hover:scale-105">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Tổng chi tiêu</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -1649,7 +1695,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="transition-transform hover:scale-105 bg-white/60  dark:bg-black/50">
+            <Card className="liquid-glass-card transition-transform hover:scale-105">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Đã nạp</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -1664,7 +1710,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="transition-transform hover:scale-105 bg-white/60  dark:bg-black/50">
+            <Card className="liquid-glass-card transition-transform hover:scale-105">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Đã rút</CardTitle>
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
@@ -1679,7 +1725,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="transition-transform hover:scale-105 bg-white/60  dark:bg-black/50">
+            <Card className="liquid-glass-card transition-transform hover:scale-105">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Tổng Downloads</CardTitle>
                 <Download className="h-4 w-4 text-muted-foreground" />
@@ -1995,7 +2041,7 @@ export default function DashboardPage() {
           </div>
 
             <TabsContent value="purchases" className="space-y-4 mt-6 animate-fade-in-up">
-              <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Package className="w-5 h-5 mr-2" />
@@ -2301,7 +2347,7 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="wishlist" className="space-y-4 mt-6 animate-fade-in-up">
-              <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
                     <CardTitle className="flex items-center">
@@ -2393,7 +2439,7 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="deposits" className="space-y-4 mt-6 animate-fade-in-up">
-              <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <TrendingUp className="w-5 h-5 mr-2" />
@@ -2442,7 +2488,7 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="withdrawals" className="space-y-4 mt-6 animate-fade-in-up">
-              <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <CreditCard className="w-5 h-5 mr-2" />
@@ -2494,7 +2540,7 @@ export default function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="activity" className="space-y-4 mt-6 animate-fade-in-up">
-              <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <CardTitle className="flex items-center">
@@ -2583,7 +2629,7 @@ export default function DashboardPage() {
 
             <TabsContent value="support" className="space-y-4 mt-6 animate-fade-in-up">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <MessageSquare className="w-5 h-5 mr-2" />
@@ -2654,7 +2700,7 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span>Lịch sử ticket ({supportTickets.length})</span>
@@ -2715,7 +2761,7 @@ export default function DashboardPage() {
 
             <TabsContent value="profile" className="space-y-4 mt-6 animate-fade-in-up">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <UserIcon className="w-5 h-5 mr-2" />
@@ -2864,7 +2910,7 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Settings className="w-5 h-5 mr-2" />
@@ -3036,7 +3082,7 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <KeyRound className="w-5 h-5 mr-2" />
@@ -3070,7 +3116,7 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <Card className="liquid-glass-card border-border/50 shadow-lg hover:shadow-xl transition-shadow duration-300">
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Smartphone className="w-5 h-5 mr-2" />

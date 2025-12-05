@@ -1,6 +1,5 @@
 import { revalidateTag } from "next/cache"
-import { pool } from "@/lib/database"
-import type { QueryResult } from "pg"
+import { query } from "@/lib/database-mysql"
 
 type PurchaseRow = {
   id: string
@@ -15,16 +14,19 @@ type PurchaseRow = {
 export async function getUserPurchases(uid: string, limit = 50): Promise<PurchaseRow[]> {
   if (!uid) return []
 
-  const result: QueryResult<PurchaseRow> = await pool.query(
-    `SELECT id, user_uid, product_id, product_title, amount, status, created_at
+  const rows = await query<PurchaseRow>(
+    `SELECT id, user_id as user_uid, product_id, product_title, amount, status, created_at
      FROM purchases
-     WHERE user_uid = $1
+     WHERE user_id = ?
      ORDER BY created_at DESC
-     LIMIT $2`,
+     LIMIT ?`,
     [uid, limit],
   )
 
-  return result.rows
+  return rows.map(row => ({
+    ...row,
+    user_uid: String(row.user_uid || row.id), // Ensure user_uid is string
+  }))
 }
 
 export async function revalidateUserPurchases(uid: string) {

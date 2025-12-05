@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyFirebaseToken, requireAdmin } from '@/lib/api-auth';
-import { pool, getUserIdByEmail, createChat, getChats } from '@/lib/database';
+import { query, queryOne, getUserIdByEmail, createChat, getChats } from '@/lib/database-mysql';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { Product } from '@/types/product';
@@ -67,18 +67,18 @@ export async function POST(request: NextRequest) {
     }
     
     // ✅ Check nếu sender là admin - kiểm tra cả admin table và users.role
-    const adminCheck = await pool.query(
+    const adminCheck = await query<any>(
       `SELECT a.id 
        FROM admin a
-       WHERE a.user_id = $1
+       WHERE a.user_id = ?
        UNION
        SELECT u.id
        FROM users u
-       WHERE u.id = $1 AND u.role = 'admin'`,
-      [senderId]
+       WHERE u.id = ? AND u.role = 'admin'`,
+      [senderId, senderId]
     );
     
-    const isAdmin = adminCheck.rows.length > 0;
+    const isAdmin = adminCheck.length > 0;
     
     // Determine receiver và admin_id
     let userId: number = senderId; // ✅ FIX: Initialize với senderId
@@ -95,15 +95,15 @@ export async function POST(request: NextRequest) {
       // User gửi cho admin → tìm admin user_id
       // ✅ FIX: Tối ưu query - tìm admin một lần với UNION
       try {
-        const adminResult = await pool.query(
+        const adminResult = await query<any>(
           `SELECT id as user_id FROM users WHERE role = 'admin' LIMIT 1
            UNION ALL
            SELECT user_id as user_id FROM admin WHERE user_id IS NOT NULL LIMIT 1
            LIMIT 1`
         );
         
-        if (adminResult.rows.length > 0) {
-          adminId = adminResult.rows[0].user_id;
+        if (adminResult.length > 0) {
+          adminId = adminResult[0].user_id;
         } else {
           // ✅ FIX: Nếu không tìm thấy admin, vẫn cho phép gửi tin nhắn (adminId = null)
           // Tin nhắn sẽ được lưu và admin có thể xem sau
@@ -199,17 +199,17 @@ export async function GET(request: NextRequest) {
     }
     
     // ✅ Check if admin - kiểm tra cả admin table và users.role
-    const adminCheck = await pool.query(
+    const adminCheck = await query<any>(
       `SELECT a.id 
        FROM admin a
-       WHERE a.user_id = $1
+       WHERE a.user_id = ?
        UNION
        SELECT u.id
        FROM users u
-       WHERE u.id = $1 AND u.role = 'admin'`,
-      [currentUserId]
+       WHERE u.id = ? AND u.role = 'admin'`,
+      [currentUserId, currentUserId]
     );
-    const isAdmin = adminCheck.rows.length > 0;
+    const isAdmin = adminCheck.length > 0;
     
     // Get chats với pagination ở database level
     let chats;
@@ -264,7 +264,7 @@ async function generateAutoReply(userMessage: string, userId: number): Promise<s
       .join('\n');
 
     // ✅ NEW: Lấy thông tin sản phẩm phổ biến để AI có thể trả lời về sản phẩm
-    const { getProducts } = await import('@/lib/database');
+    const { getProducts } = await import('@/lib/database-mysql');
     const popularProducts = await getProducts({ isActive: true, limit: 5 });
     const productsList = popularProducts
       .map((p, i) => `${i + 1}. ${p.title} - ${p.price ? `${p.price.toLocaleString('vi-VN')}đ` : 'Liên hệ'}${p.category ? ` (${p.category})` : ''}`)

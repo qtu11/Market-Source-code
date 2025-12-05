@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, getUserIdByEmail } from '@/lib/database';
+import { getUserByEmail, getUserIdByEmail } from '@/lib/database-mysql';
 import { requireAuth, verifyFirebaseToken } from '@/lib/api-auth';
 import { userManager } from '@/lib/userManager';
 import { logger } from '@/lib/logger';
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       // Try as numeric ID
       const userIdNum = parseInt(uid);
       if (!isNaN(userIdNum)) {
-        const { getUserById } = await import('@/lib/database');
+        const { getUserById } = await import('@/lib/database-mysql');
         result = await getUserById(userIdNum);
       }
     }

@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDeposits, createDeposit, updateDepositStatus } from '@/lib/database';
-import { verifyFirebaseToken, requireAdmin, validateRequest } from '@/lib/api-auth';
-import { checkRateLimitAndRespond } from '@/lib/rate-limit';
-import { depositSchema, updateDepositStatusSchema } from '@/lib/validation-schemas';
-import { notifyDepositRequest } from '@/lib/server-notifications';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from 'next/server'
+import { getDeposits, createDeposit, updateDepositStatus } from '@/lib/database-mysql'
+import { verifyFirebaseToken, requireAdmin, validateRequest } from '@/lib/api-auth'
+import { checkRateLimitAndRespond } from '@/lib/rate-limit'
+import { depositSchema, updateDepositStatusSchema } from '@/lib/validation-schemas'
+import { notifyDepositRequest } from '@/lib/server-notifications'
+import { logger } from '@/lib/logger'
+import { getUserIdByEmail, getUserByIdMySQL, queryOne } from '@/lib/database-mysql'
 
 export const runtime = 'nodejs'
 
@@ -35,7 +36,6 @@ export async function GET(request: NextRequest): Promise<Response> {
     if (userId && authUser && !isAdmin) {
       // userId từ query param có thể là number (PostgreSQL ID) hoặc string (Firebase UID)
       // Cần check bằng cách so sánh email hoặc convert userId sang uid
-      const { getUserIdByEmail } = await import('@/lib/database');
       const dbUserId = await getUserIdByEmail(authUser.email || '');
       const userIdNum = parseInt(userId);
       
@@ -52,7 +52,6 @@ export async function GET(request: NextRequest): Promise<Response> {
     if (userId) {
       if (isNaN(parseInt(userId))) {
         // userId là string (uid), cần tìm DB ID
-        const { getUserIdByEmail } = await import('@/lib/database');
         dbUserId = await getUserIdByEmail(authUser?.email || '') || undefined;
       } else {
         dbUserId = parseInt(userId);
@@ -105,8 +104,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       const depositUserIdStr = depositData.userId.toString();
       // Nếu là number (DB ID), cần check bằng email
       if (!isNaN(Number(depositData.userId))) {
-        const { getUserById } = await import('@/lib/database');
-        const user = await getUserById(Number(depositData.userId));
+        const user = await getUserByIdMySQL(Number(depositData.userId));
         if (user && user.email !== authUser.email) {
           return NextResponse.json({
             success: false,
@@ -136,13 +134,12 @@ export async function POST(request: NextRequest): Promise<Response> {
     
     // Get the created deposit để trả về đầy đủ thông tin
     // ✅ FIX: Query chỉ deposit vừa tạo thay vì query tất cả
-    const { pool } = await import('@/lib/database');
-    const depositResult = await pool.query(
+    const depositRow = await queryOne<any>(
       `SELECT d.*, u.email, u.username
        FROM deposits d
        LEFT JOIN users u ON d.user_id = u.id
-       WHERE d.id = $1`,
-      [result.id]
+       WHERE d.id = ?`,
+      [result.id],
     );
     
     const notifyPayload = {
@@ -162,7 +159,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({
       success: true,
       message: 'Deposit request received',
-      deposit: depositResult.rows[0] || {
+      deposit: depositRow || {
         id: result.id,
         timestamp: result.timestamp
       },

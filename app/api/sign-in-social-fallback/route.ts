@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, createOrUpdateUser } from '@/lib/database';
+import { getUserByEmail, createOrUpdateUser } from '@/lib/database-mysql';
 import { getClientIP } from '@/lib/api-auth';
 import { logger } from '@/lib/logger';
 
