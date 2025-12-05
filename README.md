@@ -1,5 +1,5 @@
 # Market-Source
-https://market-source-code.vercel.app/
+https://......vercel.app/
 Website chuyên về code - Nền tảng mua bán mã nguồn chất lượng cao
 
 ## 🚀 Tính năng chính
@@ -71,17 +71,7 @@ npm run dev
 
 Truy cập [http://localhost:3000](http://localhost:3000) để xem website.
 
-## 🐳 Docker + Supabase/PostgreSQL
 
-1. Tạo file `.env` (có thể reuse `.env.local`) và đảm bảo có tối thiểu:
-   ```
-   POSTGRES_USER=postgres
-   POSTGRES_PASSWORD=postgres
-   POSTGRES_DB=postgres
-   DATABASE_URL=postgresql://postgres:postgres@supabase-db:5432/postgres?schema=public
-   DIRECT_URL=${DATABASE_URL}
-   NEXTAUTH_URL=http://localhost:3000
-   ```
 2. Build & chạy toàn bộ stack (Next.js + Supabase Postgres):
    ```bash
    docker compose up --build
